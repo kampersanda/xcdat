@@ -27,3 +27,9 @@
 *.exe
 *.out
 *.app
+
+# My Definition
+build/
+cmake-build-debug/
+.idea/
+.DS_Store
