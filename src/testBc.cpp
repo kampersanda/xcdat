@@ -14,12 +14,12 @@ namespace {
 constexpr size_t kSize = (1U << 16);
 constexpr uint32_t kUpper = (1U << 31) - 1;
 
-std::vector<BcItem> make_bc() {
+std::vector<BcElement> make_bc() {
   std::random_device rnd;
-  std::vector<BcItem> ret;
+  std::vector<BcElement> ret;
 
   for (size_t i = 0; i < kSize; ++i) {
-    BcItem item;
+    BcElement item;
     item.base = rnd() % kUpper;
     item.check = rnd() % kUpper;
     switch (rnd() % 3) {
@@ -42,7 +42,7 @@ std::vector<BcItem> make_bc() {
 }
 
 template <typename Bc>
-void test_bc(const std::vector<BcItem>& orig_bc) {
+void test_bc(const std::vector<BcElement>& orig_bc) {
   Bc bc{orig_bc};
 
   assert(bc.num_nodes() == orig_bc.size());

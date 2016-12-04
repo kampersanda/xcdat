@@ -284,28 +284,28 @@ uint32_t BitVector::select(uint32_t i) const {
 
 size_t BitVector::size_in_bytes() const {
   size_t ret = 0;
-  ret += util::size_in_bytes(bits_);
-  ret += util::size_in_bytes(rank_tips_);
-  ret += util::size_in_bytes(select_tips_);
+  ret += size_vector(bits_);
+  ret += size_vector(rank_tips_);
+  ret += size_vector(select_tips_);
   ret += sizeof(size_);
   ret += sizeof(num_1s_);
   return ret;
 }
 
 void BitVector::write(std::ostream& os) const {
-  util::write_vector(bits_, os);
-  util::write_vector(rank_tips_, os);
-  util::write_vector(select_tips_, os);
-  util::write_value(size_, os);
-  util::write_value(num_1s_, os);
+  write_vector(bits_, os);
+  write_vector(rank_tips_, os);
+  write_vector(select_tips_, os);
+  write_value(size_, os);
+  write_value(num_1s_, os);
 }
 
 void BitVector::read(std::istream& is) {
-  util::read_vector(bits_, is);
-  util::read_vector(rank_tips_, is);
-  util::read_vector(select_tips_, is);
-  util::read_value(size_, is);
-  util::read_value(num_1s_, is);
+  read_vector(bits_, is);
+  read_vector(rank_tips_, is);
+  read_vector(select_tips_, is);
+  read_value(size_, is);
+  read_value(num_1s_, is);
 }
 
 void BitVector::swap(BitVector& rhs) {

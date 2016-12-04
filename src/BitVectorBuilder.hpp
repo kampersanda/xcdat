@@ -1,7 +1,3 @@
-//
-// Created by Kampersanda on 2016/11/22.
-//
-
 #ifndef XCDAT_BIT_VECTOR_BUILDER_HPP_
 #define XCDAT_BIT_VECTOR_BUILDER_HPP_
 

@@ -34,7 +34,7 @@ SmallVector::SmallVector(const std::vector<uint32_t>& integers) {
 
 size_t SmallVector::size_in_bytes() const {
   size_t ret = 0;
-  ret += util::size_in_bytes(chunks_);
+  ret += size_vector(chunks_);
   ret += sizeof(size_);
   ret += sizeof(bits_);
   ret += sizeof(mask_);
@@ -42,17 +42,17 @@ size_t SmallVector::size_in_bytes() const {
 }
 
 void SmallVector::write(std::ostream& os) const {
-  util::write_vector(chunks_, os);
-  util::write_value(size_, os);
-  util::write_value(bits_, os);
-  util::write_value(mask_, os);
+  write_vector(chunks_, os);
+  write_value(size_, os);
+  write_value(bits_, os);
+  write_value(mask_, os);
 }
 
 void SmallVector::read(std::istream& is) {
-  util::read_vector(chunks_, is);
-  util::read_value(size_, is);
-  util::read_value(bits_, is);
-  util::read_value(mask_, is);
+  read_vector(chunks_, is);
+  read_value(size_, is);
+  read_value(bits_, is);
+  read_value(mask_, is);
 }
 
 void SmallVector::swap(SmallVector& rhs) {

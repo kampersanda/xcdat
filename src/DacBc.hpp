@@ -1,8 +1,6 @@
 #ifndef XCDAT_DAC_BC_HPP_
 #define XCDAT_DAC_BC_HPP_
 
-#include <array>
-
 #include "BitVector.hpp"
 #include "SmallVector.hpp"
 
@@ -14,7 +12,7 @@ public:
   static constexpr uint32_t kFirstBits = 8;
 
   DacBc() {}
-  DacBc(const std::vector<BcItem>& bc);
+  DacBc(const std::vector<BcElement>& bc);
 
   ~DacBc() {}
 
@@ -46,7 +44,6 @@ public:
   }
 
   size_t size_in_bytes() const;
-
   void show_stat(std::ostream &os) const;
 
   void write(std::ostream &os) const;

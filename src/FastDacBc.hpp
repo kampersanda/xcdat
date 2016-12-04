@@ -1,7 +1,6 @@
 #ifndef XCDAT_FAST_DAC_BC_HPP_
 #define XCDAT_FAST_DAC_BC_HPP_
 
-#include <array>
 #include <tuple>
 
 #include "BitVector.hpp"
@@ -15,7 +14,7 @@ public:
   static constexpr uint32_t kFirstBits = 7;
 
   FastDacBc() {}
-  FastDacBc(const std::vector<BcItem>& bc);
+  FastDacBc(const std::vector<BcElement>& bc);
 
   ~FastDacBc() {}
 

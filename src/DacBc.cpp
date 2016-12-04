@@ -2,7 +2,7 @@
 
 namespace xcdat {
 
-DacBc::DacBc(const std::vector<BcItem>& bc) {
+DacBc::DacBc(const std::vector<BcElement>& bc) {
   if (bc.empty()) {
     return;
   }
@@ -66,7 +66,7 @@ DacBc::DacBc(const std::vector<BcItem>& bc) {
 size_t DacBc::size_in_bytes() const {
   size_t ret = 0;
   for (auto& values : values_) {
-    ret += util::size_in_bytes(values);
+    ret += size_vector(values);
   }
   for (auto& flags : flags_) {
     ret += flags.size_in_bytes();
@@ -81,44 +81,44 @@ size_t DacBc::size_in_bytes() const {
 void DacBc::show_stat(std::ostream& os) const {
   const auto total_size = size_in_bytes();
   os << "basic statistics of xcdat::DacBc" << std::endl;
-  util::show_stat("\tnum links:     ", links_.size(), os);
-  util::show_stat("\tbytes per node:", double(total_size) / num_nodes(), os);
+  show_size("\tnum links:     ", links_.size(), os);
+  show_size("\tbytes per node:", double(total_size) / num_nodes(), os);
   os << "member size statistics of xcdat::DacBc" << std::endl;
-  util::show_stat("\tvalues_[0]:", util::size_in_bytes(values_[0]), total_size, os);
-  util::show_stat("\tvalues_[1]:", util::size_in_bytes(values_[1]), total_size, os);
-  util::show_stat("\tvalues_[2]:", util::size_in_bytes(values_[2]), total_size, os);
-  util::show_stat("\tvalues_[3]:", util::size_in_bytes(values_[3]), total_size, os);
-  util::show_stat("\tflags_[0]: ", flags_[0].size_in_bytes(), total_size, os);
-  util::show_stat("\tflags_[1]: ", flags_[1].size_in_bytes(), total_size, os);
-  util::show_stat("\tflags_[2]: ", flags_[2].size_in_bytes(), total_size, os);
-  util::show_stat("\tleaves_:   ", leaves_.size_in_bytes(), total_size, os);
-  util::show_stat("\tlinks_:    ", links_.size_in_bytes(), total_size, os);
+  show_size_ratio("\tvalues_[0]:", size_vector(values_[0]), total_size, os);
+  show_size_ratio("\tvalues_[1]:", size_vector(values_[1]), total_size, os);
+  show_size_ratio("\tvalues_[2]:", size_vector(values_[2]), total_size, os);
+  show_size_ratio("\tvalues_[3]:", size_vector(values_[3]), total_size, os);
+  show_size_ratio("\tflags_[0]: ", flags_[0].size_in_bytes(), total_size, os);
+  show_size_ratio("\tflags_[1]: ", flags_[1].size_in_bytes(), total_size, os);
+  show_size_ratio("\tflags_[2]: ", flags_[2].size_in_bytes(), total_size, os);
+  show_size_ratio("\tleaves_:   ", leaves_.size_in_bytes(), total_size, os);
+  show_size_ratio("\tlinks_:    ", links_.size_in_bytes(), total_size, os);
 }
 
 void DacBc::write(std::ostream& os) const {
   for (auto& values : values_) {
-    util::write_vector(values, os);
+    write_vector(values, os);
   }
   for (auto& flags : flags_) {
     flags.write(os);
   }
   leaves_.write(os);
   links_.write(os);
-  util::write_value(max_level_, os);
-  util::write_value(num_free_nodes_, os);
+  write_value(max_level_, os);
+  write_value(num_free_nodes_, os);
 }
 
 void DacBc::read(std::istream& is) {
   for (auto& values : values_) {
-    util::read_vector(values, is);
+    read_vector(values, is);
   }
   for (auto& flags : flags_) {
     flags.read(is);
   }
   leaves_.read(is);
   links_.read(is);
-  util::read_value(max_level_, is);
-  util::read_value(num_free_nodes_, is);
+  read_value(max_level_, is);
+  read_value(num_free_nodes_, is);
 }
 
 void DacBc::swap(DacBc& rhs) {

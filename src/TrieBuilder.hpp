@@ -1,14 +1,14 @@
 #ifndef XCDAT_TRIE_BUILDER_HPP_
 #define XCDAT_TRIE_BUILDER_HPP_
 
-#include <array>
-
 #include "BitVectorBuilder.hpp"
+#include "CharRange.hpp"
+#include "Exception.hpp"
 
 namespace xcdat {
 
 template<bool Fast>
-class Trie; // prototype
+class Trie; // prototype declaration for friend
 
 //
 class TrieBuilder {
@@ -16,6 +16,8 @@ public:
   friend class Trie<true>;
   friend class Trie<false>;
 
+  static constexpr uint32_t kTabooId = 1; // for avoiding undefined traversal
+  static constexpr uint32_t kBcUpper = (1U << 31) - 1;
   static constexpr uint32_t kFreeBlocks = 16; // inspired by darts-clone
 
   TrieBuilder(const std::vector<CharRange>& strings, uint32_t first_bit_size);
@@ -39,7 +41,7 @@ private:
   const std::vector<CharRange>& strings_;
   const uint32_t block_size_;
 
-  std::vector<BcItem> bc_;
+  std::vector<BcElement> bc_;
   BitVectorBuilder terms_;
   std::vector<uint8_t> tail_;
   std::vector<uint8_t> alphabet_;

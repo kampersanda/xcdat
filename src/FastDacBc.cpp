@@ -2,7 +2,7 @@
 
 namespace xcdat {
 
-FastDacBc::FastDacBc(const std::vector<BcItem>& bc) {
+FastDacBc::FastDacBc(const std::vector<BcElement>& bc) {
   if (bc.empty()) {
     return;
   }
@@ -73,11 +73,11 @@ FastDacBc::FastDacBc(const std::vector<BcItem>& bc) {
 
 size_t FastDacBc::size_in_bytes() const {
   size_t ret = 0;
-  ret += util::size_in_bytes(std::get<0>(values_));
-  ret += util::size_in_bytes(std::get<1>(values_));
-  ret += util::size_in_bytes(std::get<2>(values_));
+  ret += size_vector(std::get<0>(values_));
+  ret += size_vector(std::get<1>(values_));
+  ret += size_vector(std::get<2>(values_));
   for (auto& ranks : ranks_) {
-    ret += util::size_in_bytes(ranks);
+    ret += size_vector(ranks);
   }
   ret += leaves_.size_in_bytes();
   ret += links_.size_in_bytes();
@@ -88,40 +88,40 @@ size_t FastDacBc::size_in_bytes() const {
 void FastDacBc::show_stat(std::ostream& os) const {
   const auto total_size = size_in_bytes();
   os << "basic statistics of xcdat::FastDacBc" << std::endl;
-  util::show_stat("\tnum links:     ", links_.size(), os);
-  util::show_stat("\tbytes per node:", double(total_size) / num_nodes(), os);
+  show_size("\tnum links:     ", links_.size(), os);
+  show_size("\tbytes per node:", double(total_size) / num_nodes(), os);
   os << "member size statistics of xcdat::FastDacBc" << std::endl;
-  util::show_stat("\tvalues_[0]:", util::size_in_bytes(std::get<0>(values_)), total_size, os);
-  util::show_stat("\tvalues_[1]:", util::size_in_bytes(std::get<1>(values_)), total_size, os);
-  util::show_stat("\tvalues_[2]:", util::size_in_bytes(std::get<2>(values_)), total_size, os);
-  util::show_stat("\tranks_[0]: ", util::size_in_bytes(ranks_[0]), total_size, os);
-  util::show_stat("\tranks_[1]: ", util::size_in_bytes(ranks_[1]), total_size, os);
-  util::show_stat("\tleaves_:   ", leaves_.size_in_bytes(), total_size, os);
-  util::show_stat("\tlinks_:    ", links_.size_in_bytes(), total_size, os);
+  show_size_ratio("\tvalues_[0]:", size_vector(std::get<0>(values_)), total_size, os);
+  show_size_ratio("\tvalues_[1]:", size_vector(std::get<1>(values_)), total_size, os);
+  show_size_ratio("\tvalues_[2]:", size_vector(std::get<2>(values_)), total_size, os);
+  show_size_ratio("\tranks_[0]: ", size_vector(ranks_[0]), total_size, os);
+  show_size_ratio("\tranks_[1]: ", size_vector(ranks_[1]), total_size, os);
+  show_size_ratio("\tleaves_:   ", leaves_.size_in_bytes(), total_size, os);
+  show_size_ratio("\tlinks_:    ", links_.size_in_bytes(), total_size, os);
 }
 
 void FastDacBc::write(std::ostream& os) const {
-  util::write_vector(std::get<0>(values_), os);
-  util::write_vector(std::get<1>(values_), os);
-  util::write_vector(std::get<2>(values_), os);
+  write_vector(std::get<0>(values_), os);
+  write_vector(std::get<1>(values_), os);
+  write_vector(std::get<2>(values_), os);
   for (auto& ranks : ranks_) {
-    util::write_vector(ranks, os);
+    write_vector(ranks, os);
   }
   leaves_.write(os);
   links_.write(os);
-  util::write_value(num_free_nodes_, os);
+  write_value(num_free_nodes_, os);
 }
 
 void FastDacBc::read(std::istream& is) {
-  util::read_vector(std::get<0>(values_), is);
-  util::read_vector(std::get<1>(values_), is);
-  util::read_vector(std::get<2>(values_), is);
+  read_vector(std::get<0>(values_), is);
+  read_vector(std::get<1>(values_), is);
+  read_vector(std::get<2>(values_), is);
   for (auto& ranks : ranks_) {
-    util::read_vector(ranks, is);
+    read_vector(ranks, is);
   }
   leaves_.read(is);
   links_.read(is);
-  util::read_value(num_free_nodes_, is);
+  read_value(num_free_nodes_, is);
 }
 
 void FastDacBc::swap(FastDacBc& rhs) {

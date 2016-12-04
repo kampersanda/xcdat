@@ -1,7 +1,9 @@
 set(HEADER_FILES
   BitVector.hpp
   BitVectorBuilder.hpp
+  CharRange.hpp
   DacBc.hpp
+  Exception.hpp
   FastDacBc.hpp
   SmallVector.hpp
   Trie.hpp

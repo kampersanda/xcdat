@@ -2,6 +2,9 @@
 
 namespace xcdat {
 
+#define XCDAT_THROW(message) \
+  throw Exception(message, __FILE__, __func__, __LINE__)
+
 TrieBuilder::TrieBuilder(const std::vector<CharRange>& strings,
                          uint32_t first_bit_size)
   : strings_(strings), block_size_(1U << first_bit_size) {
@@ -34,13 +37,13 @@ TrieBuilder::TrieBuilder(const std::vector<CharRange>& strings,
     heads_.emplace_back(i);
   }
 
-  use_(kRootId);
-  bc_[kRootId].check = kTabooId;
+  use_(0);
+  bc_[0].check = kTabooId;
   bc_[kTabooId].is_used = true;
   heads_[kTabooId / block_size_] = bc_[kTabooId].base;
 
   build_table_();
-  build_bc_(0, strings_.size(), 0, kRootId);
+  build_bc_(0, strings_.size(), 0, 0);
   build_tail_();
 }
 

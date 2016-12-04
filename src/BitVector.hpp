@@ -1,16 +1,16 @@
 #ifndef XCDAT_BIT_VECTOR_HPP_
 #define XCDAT_BIT_VECTOR_HPP_
 
-#include <array>
-
 #include "BitVectorBuilder.hpp"
 
 namespace xcdat {
 
+// A simple rank/select dictionary.
 class BitVector {
 public:
   BitVector() {}
-  BitVector(BitVectorBuilder& builder, bool select_flag = false); // builder.bits_ is stolen.
+  // builder.bits_ is stolen.
+  BitVector(BitVectorBuilder& builder, bool select_flag = false);
 
   ~BitVector() {}
 
