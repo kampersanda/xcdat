@@ -5,12 +5,13 @@
 
 namespace xcdat {
 
-// A simple rank/select dictionary.
+/*
+ * Bit vector supporting Rank/Select operations.
+ * */
 class BitVector {
 public:
   BitVector() {}
-  // builder.bits_ is stolen.
-  BitVector(BitVectorBuilder& builder, bool select_flag = false);
+  BitVector(BitVectorBuilder& builder, bool select_flag = false); // builder.bits_ is stolen.
 
   ~BitVector() {}
 
@@ -18,15 +19,19 @@ public:
     return (bits_[i / 32] & (1U << (i % 32))) != 0;
   }
 
-  // # of 1s in B[0,i)
-  uint32_t rank(uint32_t i) const;
-  // position of the i+1 th occurrence
-  uint32_t select(uint32_t i) const;
+  uint32_t rank(uint32_t i) const; // the number of 1s in B[0,i).
+  uint32_t select(uint32_t i) const; // the position of the i+1 th occurrence.
 
-  size_t num_1s() const { return num_1s_; }
-  size_t num_0s() const { return size_ - num_1s_; }
+  size_t num_1s() const {
+    return num_1s_;
+  }
+  size_t num_0s() const {
+    return size_ - num_1s_;
+  }
 
-  size_t size() const { return size_; } // # of bits
+  size_t size() const { // the number of bits
+    return size_;
+  }
   size_t size_in_bytes() const;
 
   void write(std::ostream &os) const;

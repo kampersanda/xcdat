@@ -7,6 +7,9 @@
 
 namespace xcdat {
 
+/*
+ * Exception class for xcdat.
+ * */
 class Exception : public std::exception {
 public:
   Exception(const char* message, const char* file_name,
@@ -15,6 +18,7 @@ public:
 
   virtual ~Exception() throw() {}
 
+  // overrides what() of std::exception.
   virtual const char* what() const throw() {
     return message_.c_str();
   }

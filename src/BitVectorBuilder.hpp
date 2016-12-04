@@ -5,12 +5,17 @@
 
 namespace xcdat {
 
+/*
+ * Pool of bits for building BitVector.
+ * */
 class BitVectorBuilder {
 public:
   friend class BitVector;
 
   BitVectorBuilder() {}
-  BitVectorBuilder(size_t size) { resize(size); }
+  BitVectorBuilder(size_t size) {
+    resize(size);
+  }
 
   ~BitVectorBuilder() {}
 

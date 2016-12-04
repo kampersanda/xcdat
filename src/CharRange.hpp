@@ -6,21 +6,33 @@
 namespace xcdat {
 
 /*
- * A query string
+ * Character range for handling a query string.
  * */
 struct CharRange {
   using Type = const uint8_t*;
 
+  // pointers indicating begin and end positions of the string.
   Type begin = nullptr;
   Type end = nullptr;
 
+  /*
+   * Generic constructor.
+   * */
   CharRange() {}
-  CharRange(const std::string& string)
-    : CharRange{string.c_str(), string.c_str() + string.length()} {}
+
+  /*
+   * Adopts a query string.
+   * */
+  CharRange(Type b, Type e) : begin{b}, end{e} {}
   CharRange(const char* b, const char* e)
     : begin{reinterpret_cast<Type>(b)}, end{reinterpret_cast<Type>(e)} {}
-  CharRange(Type b, Type e) : begin{b}, end{e} {}
+  CharRange(const std::string& string)
+    : CharRange{string.c_str(), string.c_str() + string.length()} {}
 
+  /*
+   * Gets the distance between the range, that is, the string length.
+   *  @returns the string length.
+   * */
   size_t length() const { return static_cast<size_t>(end - begin); }
 };
 

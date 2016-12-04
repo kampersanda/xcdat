@@ -6,7 +6,9 @@
 
 namespace xcdat {
 
-// BASE/CHECK arrays using byte-oriented DACs.
+/*
+ * BASE/CHECK representation using byte-oriented DACs.
+ * */
 class DacBc {
 public:
   static constexpr uint32_t kFirstBits = 8;

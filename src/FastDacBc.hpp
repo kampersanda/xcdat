@@ -8,7 +8,9 @@
 
 namespace xcdat {
 
-// BASE/CHECK arrays using pointer-based DACs.
+/*
+ * BASE/CHECK representation using pointer-based byte-oriented DACs.
+ * */
 class FastDacBc {
 public:
   static constexpr uint32_t kFirstBits = 7;

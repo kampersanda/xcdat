@@ -7,18 +7,23 @@
 
 namespace xcdat {
 
-template<bool Fast>
-class Trie; // prototype declaration for friend
+// prototype declaration for friend
+template<bool Fast> class Trie;
 
-//
+/*
+ * Double-array trie builder.
+ * */
 class TrieBuilder {
 public:
   friend class Trie<true>;
   friend class Trie<false>;
 
-  static constexpr uint32_t kTabooId = 1; // for avoiding undefined traversal
+  // for avoiding undefined traversal
+  static constexpr uint32_t kTabooId = 1;
+  // the upper limit of BASE/CHECK values
   static constexpr uint32_t kBcUpper = (1U << 31) - 1;
-  static constexpr uint32_t kFreeBlocks = 16; // inspired by darts-clone
+  // inspired by darts-clone
+  static constexpr uint32_t kFreeBlocks = 16;
 
   TrieBuilder(const std::vector<CharRange>& strings, uint32_t first_bit_size);
   ~TrieBuilder() {}
@@ -30,11 +35,11 @@ private:
   struct Suffix {
     CharRange string;
     uint32_t node_id;
-    std::reverse_iterator<CharRange::Type> rbegin() const {
-      return std::reverse_iterator<CharRange::Type>(string.end);
+    std::reverse_iterator<const uint8_t*> rbegin() const {
+      return std::reverse_iterator<const uint8_t*>(string.end);
     }
-    std::reverse_iterator<CharRange::Type> rend() const {
-      return std::reverse_iterator<CharRange::Type>(string.begin);
+    std::reverse_iterator<const uint8_t*> rend() const {
+      return std::reverse_iterator<const uint8_t*>(string.begin);
     }
   };
 

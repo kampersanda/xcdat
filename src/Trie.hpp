@@ -11,8 +11,9 @@ constexpr auto kNotFound = static_cast<uint32_t>(-1);
 constexpr auto kDefaultLimit = static_cast<size_t>(-1);
 
 /*
- * A static compressed string dictionary based on an improved double-array trie.
- *  @param Fast
+ * Compressed string dictionary using an improved double-array trie. It includes two versions for
+ * representing BASE/CHECK arrays: byte-oriented DACs and pointer-based ones.
+ *  @param Fast: the version of DACs representing BASE/CHECK arrays.
  * */
 template<bool Fast>
 class Trie {
@@ -20,58 +21,132 @@ public:
   using Type = Trie<Fast>;
   using BcType = typename std::conditional<Fast, FastDacBc, DacBc>::type;
 
+  /*
+   * Generic constructor.
+   * */
   Trie() {}
 
   /*
-   * Builds a trie dictionary from a set of strings in lexicographical order.
+   * Builds the dictionary from the given strings. The strings have to satisfy the following
+   * conditions: they are sorted in lexicographical order, they are not overlapped, and they
+   * do not include the ASCII zero code. If they are not satisfied, xcdat::Exception is thrown.
+   *  @param strings: the strings to be registered.
    * */
   Trie(const std::vector<CharRange>& strings);
 
+  /*
+   * Generic destructor.
+   * */
   ~Trie() {}
 
-  // Returns the string ID if stored, otherwise 'kNotFound'.
+  /*
+   * Lookups the ID of the given string.
+   *  @param string: the query.
+   *  @returns the ID or kNotFound if the query is not in the dictionary.
+   * */
   uint32_t lookup(CharRange string) const;
 
-  // Returns the corresponding string, access(lookup())
+  /*
+   * Decodes the string associated with the given ID.
+   *  @param id: the ID.
+   *  @returns the string or an empty string if the ID is out of range.
+   * */
   std::string access(uint32_t id) const;
 
-  // Return the corresponding string.
+  /*
+   * Enumerates the all IDs of the strings included as prefixes of the given string.
+   *  @param string: the query.
+   *  @param[out] ids: the IDs of the matched strings.
+   *  @param limit: the maximum number of matched strings (optional).
+   *  @returns the number of matched strings.
+   * */
   size_t common_prefix_lookup(CharRange string, std::vector<uint32_t>& ids,
                               size_t limit = kDefaultLimit) const;
 
-  // Return the corresponding string.
+  /*
+   * Enumerates the all IDs of the strings starting with the given string.
+   *  @param string: the query.
+   *  @param[out] ids: the IDs of the matched strings.
+   *  @param limit: the maximum number of matched strings (optional).
+   *  @returns the number of matched strings.
+   * */
   size_t predictive_lookup(CharRange string, std::vector<uint32_t>& ids,
                            size_t limit = kDefaultLimit) const;
 
+  /*
+   * Gets the number of strings in the dictionary.
+   *  @returns the number of strings in the dictionary.
+   * */
   size_t num_strings() const {
     return num_strings_;
   }
+
+  /*
+   * Gets the size of alphabet drawing strings in the dictionary.
+   *  @returns the alphabet size.
+   * */
   size_t alphabet_size() const {
     return alphabet_.size();
   }
 
+  /*
+   * Gets the number of nodes assigned by arranging nodes.
+   * The result is the same as num_used_nodes() + num_free_nodes().
+   *  @returns the number of the nodes.
+   * */
   size_t num_nodes() const {
     return bc_.num_nodes();
   }
+
+  /*
+   * Gets the number of nodes in the original trie.
+   *  @returns the number of the nodes.
+   * */
   size_t num_used_nodes() const {
     return bc_.num_used_nodes();
   }
+
+  /*
+   * Gets the number of nodes corresponding to empty elements.
+   *  @returns the number of the nodes.
+   * */
   size_t num_free_nodes() const {
     return bc_.num_free_nodes();
   }
 
-  // Returns the number of bytes.
+  /*
+   * Computes the size of the structure in bytes.
+   *  @returns the dictionary size in bytes.
+   * */
   size_t size_in_bytes() const;
 
-  // Dumps statistics of the dictionary.
+  /*
+   * Reports the dictionary statistics into an ostream.
+   *  @param os: the ostream.
+   * */
   void show_stat(std::ostream& os) const;
 
+  /*
+   * Writes the dictionary into an ostream.
+   *  @param os: the ostream.
+   * */
   void write(std::ostream& os) const;
 
+  /*
+   * Reads the dictionary from an istream.
+   *  @param is: the istream.
+   * */
   void read(std::istream& is);
 
+  /*
+   * Swaps the dictionary.
+   *  @param rhs: the dictionary to be swapped.
+   * */
   void swap(Type& rhs);
 
+  /*
+   * Disallows copy and assignment.
+   * */
   Trie(const Trie&) = delete;
   Trie& operator=(const Trie&) = delete;
 
@@ -211,6 +286,10 @@ size_t Trie<Fast>::common_prefix_lookup(CharRange string, std::vector<uint32_t>&
 template<bool Fast>
 size_t Trie<Fast>::predictive_lookup(CharRange string, std::vector<uint32_t>& ids,
                                      size_t limit) const {
+  if (limit == 0) {
+    return 0;
+  }
+
   uint32_t node_id = 0;
 
   for (; string.begin != string.end; ++string.begin) {

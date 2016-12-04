@@ -12,7 +12,7 @@
 
 namespace xcdat {
 
-// For builder
+// uncompressed double-array element
 struct BcElement {
   uint32_t base : 31;
   bool is_leaf : 1;

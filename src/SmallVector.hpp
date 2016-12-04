@@ -5,6 +5,9 @@
 
 namespace xcdat {
 
+/*
+ * Compressed integer vector.
+ * */
 class SmallVector {
 public:
   SmallVector() {}
@@ -23,7 +26,9 @@ public:
     }
   }
 
-  size_t size() const { return size_; }
+  size_t size() const {
+    return size_;
+  }
   size_t size_in_bytes() const;
 
   void write(std::ostream &os) const;

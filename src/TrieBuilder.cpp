@@ -26,6 +26,7 @@ TrieBuilder::TrieBuilder(const std::vector<CharRange>& strings,
   edges_.reserve(256);
   suffixes_.reserve(strings_.size());
 
+  // initialize an empty list.
   for (uint32_t i = 0; i < 256; ++i) {
     bc_.push_back({i + 1, false, i - 1, false});
     terms_.push_back(false);
@@ -99,19 +100,19 @@ void TrieBuilder::build_table_() {
 void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth, uint32_t node_id) {
   if (strings_[begin].length() == depth) {
     terms_.set_bit(node_id, true);
-    if (++begin == end) { // without link
+    if (++begin == end) { // without link?
       bc_[node_id].base = 0;
       bc_[node_id].is_leaf = true;
       return;
     }
-  } else if (begin + 1 == end) { // leaf
+  } else if (begin + 1 == end) { // leaf?
     terms_.set_bit(node_id, true);
     auto& string = strings_[begin];
     suffixes_.push_back({{string.begin + depth, string.end}, node_id});
     return;
   }
 
-  { // Fetching edges
+  { // fetching edges
     edges_.clear();
     auto label = strings_[begin].begin[depth];
     for (auto str_id = begin + 1; str_id < end; ++str_id) {
@@ -129,7 +130,7 @@ void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth, uint32_t nod
     expand_();
   }
 
-  // Defining new edges
+  // defining new edges
   bc_[node_id].base = base;
   for (const auto label : edges_) {
     const auto child_id = base ^ table_[label];
@@ -137,7 +138,7 @@ void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth, uint32_t nod
     bc_[child_id].check = node_id;
   }
 
-  // Following children
+  // following the children
   auto _begin = begin;
   auto label = strings_[begin].begin[depth];
   for (auto _end = begin + 1; _end < end; ++_end) {
