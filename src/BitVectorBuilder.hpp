@@ -6,7 +6,7 @@
 namespace xcdat {
 
 /*
- * Pool of bits for building BitVector.
+ *  Bit pool for building BitVector.
  * */
 class BitVectorBuilder {
 public:
@@ -32,8 +32,10 @@ public:
   void set_bit(size_t i, bool bit) {
     if (bit) {
       bits_[i / 32] |= (1U << (i % 32));
+      ++num_1s_;
     } else {
       bits_[i / 32] &= (~(1U << (i % 32)));
+      --num_1s_;
     }
   }
 
@@ -56,6 +58,7 @@ public:
 private:
   std::vector<uint32_t> bits_;
   size_t size_ = 0;
+  size_t num_1s_ = 0;
 };
 
 } //namespace - xcdat

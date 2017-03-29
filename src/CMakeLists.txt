@@ -1,13 +1,12 @@
 set(HEADER_FILES
   BitVector.hpp
   BitVectorBuilder.hpp
-  CharRange.hpp
   DacBc.hpp
-  Exception.hpp
   FastDacBc.hpp
-  SmallVector.hpp
+  FitVector.hpp
   Trie.hpp
   TrieBuilder.hpp
+  Vector.hpp
   xcdatBasics.hpp
   )
 
@@ -15,7 +14,7 @@ set(SOURCE_FILES
   ${HEADER_FILES}
   BitVector.cpp
   DacBc.cpp
-  SmallVector.cpp
+  FitVector.cpp
   TrieBuilder.cpp
   FastDacBc.cpp
   )

@@ -2,6 +2,7 @@
 #define XCDAT_BIT_VECTOR_HPP_
 
 #include "BitVectorBuilder.hpp"
+#include "Vector.hpp"
 
 namespace xcdat {
 
@@ -11,16 +12,17 @@ namespace xcdat {
 class BitVector {
 public:
   BitVector() {}
-  BitVector(BitVectorBuilder& builder, bool select_flag = false); // builder.bits_ is stolen.
+  // builder.width_ is stolen.
+  BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag);
 
   ~BitVector() {}
 
-  bool operator[](uint32_t i) const {
+  bool operator[](size_t i) const {
     return (bits_[i / 32] & (1U << (i % 32))) != 0;
   }
 
-  uint32_t rank(uint32_t i) const; // the number of 1s in B[0,i).
-  uint32_t select(uint32_t i) const; // the position of the i+1 th occurrence.
+  id_type rank(size_t i) const; // the number of 1s in B[0,i).
+  id_type select(size_t i) const; // the position of the i+1 th occurrence.
 
   size_t num_1s() const {
     return num_1s_;
@@ -43,16 +45,19 @@ public:
   BitVector& operator=(const BitVector&) = delete;
 
 private:
-  static constexpr uint32_t kBitsInR1 = 256;
-  static constexpr uint32_t kBitsInR2 = 32;
-  static constexpr uint32_t kR1PerR2 = kBitsInR1 / kBitsInR2;
-  static constexpr uint32_t kNum1sPerTip = 512;
+  static constexpr id_type kBitsInR1 = 256;
+  static constexpr id_type kBitsInR2 = 32;
+  static constexpr id_type kR1PerR2 = kBitsInR1 / kBitsInR2; // 8
+  static constexpr id_type kNum1sPerTip = 512;
 
-  using RankTip = std::pair<uint32_t, std::array<uint8_t, kR1PerR2>>;
+  struct RankTip {
+    id_type L1;
+    std::array<uint8_t, kR1PerR2> L2;
+  };
 
-  std::vector<uint32_t> bits_;
-  std::vector<RankTip> rank_tips_;
-  std::vector<uint32_t> select_tips_;
+  Vector<uint32_t> bits_;
+  Vector<RankTip> rank_tips_;
+  Vector<id_type> select_tips_;
   size_t size_ = 0;
   size_t num_1s_ = 0;
 };

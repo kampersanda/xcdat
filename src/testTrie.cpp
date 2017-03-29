@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <random>
+#include <cstring>
 
 #include "Trie.hpp"
 
@@ -14,40 +15,40 @@ namespace {
 constexpr size_t kNumStrings = 1U << 10;
 constexpr size_t kMaxLength = 20;
 
-void to_set(std::vector<std::string>& strings) {
-  std::sort(std::begin(strings), std::end(strings));
-  strings.erase(std::unique(std::begin(strings), std::end(strings)), std::end(strings));
+void to_set(std::vector<std::string>& keys) {
+  std::sort(std::begin(keys), std::end(keys));
+  keys.erase(std::unique(std::begin(keys), std::end(keys)), std::end(keys));
 }
 
-std::string make_string() {
+std::string make_key() {
   std::random_device rnd;
 
-  std::string str;
+  std::string key;
   size_t length = (rnd() % kMaxLength) + 1;
   for (size_t j = 0; j < length; ++j) {
-    str += 'A' + (rnd() % 26);
+    key += 'A' + (rnd() % 26);
   }
 
-  return str;
+  return key;
 }
 
-void make_strings(std::vector<std::string>& strings) {
-  strings.clear();
-  strings.reserve(kNumStrings);
+void make_keys(std::vector<std::string>& keys) {
+  keys.clear();
+  keys.reserve(kNumStrings);
 
   for (size_t i = 0; i < kNumStrings; ++i) {
-    strings.push_back(make_string());
+    keys.emplace_back(make_key());
   }
 
-  to_set(strings);
+  to_set(keys);
 }
 
-void make_other_strings(const std::vector<std::string>& strings, std::vector<std::string>& others) {
+void make_other_keys(const std::vector<std::string>& keys, std::vector<std::string>& others) {
   others.clear();
 
   for (size_t i = 0; i < kNumStrings; ++i) {
-    auto string = make_string();
-    if (std::find(std::begin(strings), std::end(strings), string) == std::end(strings)) {
+    auto string = make_key();
+    if (std::find(std::begin(keys), std::end(keys), string) == std::end(keys)) {
       others.push_back(string);
     }
   }
@@ -56,86 +57,101 @@ void make_other_strings(const std::vector<std::string>& strings, std::vector<std
 }
 
 template <bool Fast>
-void test_build(Trie<Fast>& trie, const std::vector<CharRange>& strings) {
+void test_build(Trie<Fast>& trie, const std::vector<std::pair<const uint8_t*, size_t>>& keys,
+                bool binary_mode) {
   std::cerr << "Construction -> build()" << std::endl;
 
-  Trie<Fast>{strings}.swap(trie);
-  assert(trie.num_strings() == strings.size());
+  Trie<Fast>(keys, binary_mode).swap(trie);
+  assert(trie.num_keys() == keys.size());
 }
 
 template <bool Fast>
-void test_basic_operations(const Trie<Fast>& trie, const std::vector<CharRange>& strings,
-                           const std::vector<CharRange>& others) {
+void test_basic_operations(const Trie<Fast>& trie,
+                           const std::vector<std::pair<const uint8_t*, size_t>>& keys,
+                           const std::vector<std::pair<const uint8_t*, size_t>>& others) {
   std::cerr << "Basic operations -> lookup() and access()" << std::endl;
 
-  for (size_t i = 0; i < strings.size(); ++i) {
-    const auto id = trie.lookup(strings[i]);
+  for (auto& key : keys) {
+    const auto id = trie.lookup(key.first, key.second);
     assert(id != kNotFound);
-    assert(CharRange{trie.access(id)} == strings[i]);
+    std::vector<uint8_t> ret;
+    assert(trie.access(id, ret));
+    assert(ret.size() == key.second);
+    assert(std::memcmp(ret.data(), key.first, key.second) == 0);
   }
 
-  for (size_t i = 0; i < others.size(); ++i) {
-    const auto id = trie.lookup(others[i]);
+  for (auto& other : others) {
+    const auto id = trie.lookup(other.first, other.second);
     assert(id == kNotFound);
   }
 }
 
 template <bool Fast>
-void test_prefix_operations(const Trie<Fast>& trie, const std::vector<CharRange>& strings,
-                            const std::vector<CharRange>& others) {
+void test_prefix_operations(const Trie<Fast>& trie,
+                            const std::vector<std::pair<const uint8_t*, size_t>>& keys,
+                            const std::vector<std::pair<const uint8_t*, size_t>>& others) {
   std::cerr << "Prefix operations -> common_prefix_lookup()" << std::endl;
 
-  for (auto& string : strings) {
-    std::vector<uint32_t> ids;
-    auto num_ids = trie.common_prefix_lookup(string, ids);
+  for (auto& key : keys) {
+    std::vector<id_type> ids;
+    auto num_ids = trie.common_prefix_lookup(key.first, key.second, ids);
 
     assert(1 <= num_ids);
     assert(num_ids <= kMaxLength);
     assert(num_ids == ids.size());
 
     for (auto id : ids) {
-      assert(trie.access(id).length() <= string.length());
+      std::vector<uint8_t> ret;
+      assert(trie.access(id, ret));
+      assert(ret.size() <= key.second);
     }
   }
 
   for (auto& other : others) {
-    std::vector<uint32_t> ids;
-    auto num_ids = trie.common_prefix_lookup(other, ids);
+    std::vector<id_type> ids;
+    auto num_ids = trie.common_prefix_lookup(other.first, other.second, ids);
 
     assert(num_ids <= kMaxLength);
     assert(num_ids == ids.size());
 
     for (auto id : ids) {
-      assert(trie.access(id).length() < other.length());
+      std::vector<uint8_t> ret;
+      assert(trie.access(id, ret));
+      assert(ret.size() < other.second);
     }
   }
 }
 
 template <bool Fast>
-void test_predictive_operations(const Trie<Fast>& trie, const std::vector<CharRange>& strings,
-                                const std::vector<CharRange>& others) {
+void test_predictive_operations(const Trie<Fast>& trie,
+                                const std::vector<std::pair<const uint8_t*, size_t>>& keys,
+                                const std::vector<std::pair<const uint8_t*, size_t>>& others) {
   std::cerr << "Predictive operations -> predictive_lookup()" << std::endl;
 
-  for (auto& string : strings) {
-    std::vector<uint32_t> ids;
-    auto num_ids = trie.predictive_lookup(string, ids);
+  for (auto& key : keys) {
+    std::vector<id_type> ids;
+    auto num_ids = trie.predictive_lookup(key.first, key.second, ids);
 
     assert(1 <= num_ids);
     assert(num_ids == ids.size());
 
     for (auto id : ids) {
-      assert(string.length() <= trie.access(id).length());
+      std::vector<uint8_t> ret;
+      assert(trie.access(id, ret));
+      assert(key.second <= ret.size());
     }
   }
 
   for (auto& other : others) {
-    std::vector<uint32_t> ids;
-    auto num_ids = trie.predictive_lookup(other, ids);
+    std::vector<id_type> ids;
+    auto num_ids = trie.predictive_lookup(other.first, other.second, ids);
 
     assert(num_ids == ids.size());
 
     for (auto id : ids) {
-      assert(other.length() < trie.access(id).length());
+      std::vector<uint8_t> ret;
+      assert(trie.access(id, ret));
+      assert(other.second < ret.size());
     }
   }
 }
@@ -161,7 +177,7 @@ void test_io(const Trie<Fast>& trie) {
     _trie.read(ifs);
   }
 
-  assert(trie.num_strings() == _trie.num_strings());
+  assert(trie.num_keys() == _trie.num_keys());
   assert(trie.alphabet_size() == _trie.alphabet_size());
   assert(trie.num_nodes() == _trie.num_nodes());
   assert(trie.num_used_nodes() == _trie.num_used_nodes());
@@ -170,39 +186,44 @@ void test_io(const Trie<Fast>& trie) {
 }
 
 template <bool Fast>
-void test_trie(const std::vector<CharRange>& strings, const std::vector<CharRange>& others) {
-  Trie<Fast> trie;
-
-  std::cerr << "Testing xcdat::Trie<" << (Fast ? "true" : "false") << ">" << std::endl;
-  test_build(trie, strings);
-  test_basic_operations(trie, strings, others);
-  test_prefix_operations(trie, strings, others);
-  test_predictive_operations(trie, strings, others);
-  test_io(trie);
-  std::cerr << "OK!" << std::endl;
+void test_trie(const std::vector<std::pair<const uint8_t*, size_t>>& strings,
+               const std::vector<std::pair<const uint8_t*, size_t>>& others) {
+  for (int i = 0; i < 2; ++i) {
+    std::cerr << "** " << (i % 2 ? "Binary" : "Text") << " Mode **" << std::endl;
+    std::cerr << "Testing xcdat::Trie<" << (Fast ? "true" : "false") << ">" << std::endl;
+    Trie<Fast> trie;
+    test_build(trie, strings, i % 2 == 0);
+    test_basic_operations(trie, strings, others);
+    test_prefix_operations(trie, strings, others);
+    test_predictive_operations(trie, strings, others);
+    test_io(trie);
+    std::cerr << "No problem" << std::endl << std::endl;
+  }
 }
 
 } // namespace
 
 int main() {
-  std::vector<std::string> strings_buffer;
-  make_strings(strings_buffer);
+  std::vector<std::string> keys_buffer;
+  make_keys(keys_buffer);
 
   std::vector<std::string> others_buffer;
-  make_other_strings(strings_buffer, others_buffer);
+  make_other_keys(keys_buffer, others_buffer);
 
-  std::vector<CharRange> strings(strings_buffer.size());
-  for (size_t i = 0; i < strings.size(); ++i) {
-    strings[i] = {strings_buffer[i]};
+  std::vector<std::pair<const uint8_t*, size_t>> keys(keys_buffer.size());
+  for (size_t i = 0; i < keys.size(); ++i) {
+    keys[i] = {reinterpret_cast<const uint8_t*>(keys_buffer[i].c_str()),
+               keys_buffer[i].length()};
   }
 
-  std::vector<CharRange> others(others_buffer.size());
+  std::vector<std::pair<const uint8_t*, size_t>> others(others_buffer.size());
   for (size_t i = 0; i < others.size(); ++i) {
-    others[i] = {others_buffer[i]};
+    others[i] = {reinterpret_cast<const uint8_t*>(others_buffer[i].c_str()),
+                 others_buffer[i].length()};
   }
 
-  test_trie<false>(strings, others);
-  test_trie<true>(strings, others);
+  test_trie<false>(keys, others);
+  test_trie<true>(keys, others);
 
   return 0;
 }

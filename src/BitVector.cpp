@@ -177,70 +177,66 @@ uint32_t pop_count(uint32_t bits) {
   return bits & 0x3F;
 }
 
-BitVector::BitVector(BitVectorBuilder& builder, bool select_flag) {
+BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag) {
   if (!builder.size()) {
     return;
   }
 
-  builder.bits_.shrink_to_fit();
-  bits_ = std::move(builder.bits_);
-
+  bits_.steal(builder.bits_);
   size_ = builder.size_;
-  rank_tips_.resize(size_ / kBitsInR1 + 1);
-
-  num_1s_ = 0;
+  num_1s_ = builder.num_1s_;
 
   // builds rank_tips_
-  for (uint32_t i = 0; i < rank_tips_.size(); ++i) {
-    auto& tip = rank_tips_[i];
-    tip.first = static_cast<uint32_t>(num_1s_);
-
-    for (uint32_t offset = 0; offset < kR1PerR2; ++offset) {
-      tip.second[offset] = static_cast<uint8_t>(num_1s_ - tip.first);
-      auto pos_in_bits = i * kR1PerR2 + offset;
-
-      if (pos_in_bits < bits_.size()) {
-        num_1s_ += pop_count(bits_[pos_in_bits]);
+  if (rank_flag) {
+    std::vector<RankTip> rank_tips(size_ / kBitsInR1 + 1);
+    id_type count = 0;
+    for (id_type i = 0; i < rank_tips.size(); ++i) {
+      auto& tip = rank_tips[i];
+      tip.L1 = count;
+      for (id_type offset = 0; offset < kR1PerR2; ++offset) {
+        tip.L2[offset] = static_cast<uint8_t>(count - tip.L1);
+        auto pos_in_bits = i * kR1PerR2 + offset;
+        if (pos_in_bits < bits_.size()) {
+          count += pop_count(bits_[pos_in_bits]);
+        }
       }
     }
-  }
-
-  if (select_flag) {
-    return;
+    rank_tips_.steal(rank_tips);
   }
 
   // builds select_tips_
-  select_tips_.push_back(0);
-  auto count = kNum1sPerTip;
-
-  for (uint32_t i = 0; i < rank_tips_.size(); ++i) {
-    if (count < rank_tips_[i].first) {
-      select_tips_.push_back(i - 1);
-      count += kNum1sPerTip;
+  if (rank_flag && select_flag) {
+    std::vector<id_type> select_tips{0};
+    auto count = kNum1sPerTip;
+    for (id_type i = 0; i < rank_tips_.size(); ++i) {
+      if (count < rank_tips_[i].L1) {
+        select_tips.push_back(i - 1);
+        count += kNum1sPerTip;
+      }
     }
+    select_tips.push_back(static_cast<id_type>(rank_tips_.size() - 1));
+    select_tips_.steal(select_tips);
   }
-  select_tips_.push_back(static_cast<uint32_t>(rank_tips_.size() - 1));
-  select_tips_.shrink_to_fit();
 }
 
-uint32_t BitVector::rank(uint32_t i) const {
+id_type BitVector::rank(size_t i) const {
   auto& hint = rank_tips_[i / kBitsInR1];
-  return hint.first + hint.second[i / kBitsInR2 % kR1PerR2]
+  return hint.L1 + hint.L2[i / kBitsInR2 % kR1PerR2]
          + pop_count(bits_[i / 32] & ((1U << (i % 32)) - 1));
 }
 
-uint32_t BitVector::select(uint32_t i) const {
-  uint32_t left = 0, right = static_cast<uint32_t>(rank_tips_.size());
+id_type BitVector::select(size_t i) const {
+  id_type left = 0, right = static_cast<id_type>(rank_tips_.size());
 
-  if (!select_tips_.empty()) {
-    auto select_tip_id = i / kNum1sPerTip;
+  if (!select_tips_.is_empty()) {
+    id_type select_tip_id = i / kNum1sPerTip;
     left = select_tips_[select_tip_id];
     right = select_tips_[select_tip_id + 1] + 1;
   }
 
   while (left + 1 < right) {
     const auto center = (left + right) / 2;
-    if (i < rank_tips_[center].first) {
+    if (i < rank_tips_[center].L1) {
       right = center;
     } else {
       left = center;
@@ -248,15 +244,15 @@ uint32_t BitVector::select(uint32_t i) const {
   }
 
   i += 1; // for i+1 th
-  i -= rank_tips_[left].first;
+  i -= rank_tips_[left].L1;
 
   uint32_t offset = 1;
   for (; offset < kR1PerR2; ++offset) {
-    if (i <= rank_tips_[left].second[offset]) {
+    if (i <= rank_tips_[left].L2[offset]) {
       break;
     }
   }
-  i -= rank_tips_[left].second[--offset];
+  i -= rank_tips_[left].L2[--offset];
 
   auto ret = (left * kBitsInR1) + (offset * kBitsInR2);
   auto bits = bits_[ret / 32];
@@ -284,26 +280,26 @@ uint32_t BitVector::select(uint32_t i) const {
 
 size_t BitVector::size_in_bytes() const {
   size_t ret = 0;
-  ret += size_vector(bits_);
-  ret += size_vector(rank_tips_);
-  ret += size_vector(select_tips_);
+  ret += bits_.size_in_bytes();
+  ret += rank_tips_.size_in_bytes();
+  ret += select_tips_.size_in_bytes();
   ret += sizeof(size_);
   ret += sizeof(num_1s_);
   return ret;
 }
 
 void BitVector::write(std::ostream& os) const {
-  write_vector(bits_, os);
-  write_vector(rank_tips_, os);
-  write_vector(select_tips_, os);
+  bits_.write(os);
+  rank_tips_.write(os);
+  select_tips_.write(os);
   write_value(size_, os);
   write_value(num_1s_, os);
 }
 
 void BitVector::read(std::istream& is) {
-  read_vector(bits_, is);
-  read_vector(rank_tips_, is);
-  read_vector(select_tips_, is);
+  bits_.read(is);
+  rank_tips_.read(is);
+  select_tips_.read(is);
   read_value(size_, is);
   read_value(num_1s_, is);
 }

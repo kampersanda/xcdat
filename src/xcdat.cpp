@@ -39,65 +39,46 @@ private:
   std::chrono::high_resolution_clock::time_point tp_;
 };
 
-class StringBuffer {
-public:
-  StringBuffer() {}
-  ~StringBuffer() {}
-
-  bool load(const char* file_path) {
-    std::ifstream ifs{file_path};
-    if (!ifs) {
-      return false;
-    }
-
-    std::string line;
-    while (std::getline(ifs, line)) {
-      offsets_.push_back(buffer_.size());
-      for (uint8_t c : line) {
-        buffer_.push_back(c);
-      }
-    }
-    offsets_.push_back(buffer_.size());
-
-    buffer_.shrink_to_fit();
-    offsets_.shrink_to_fit();
-
-    return true;
+size_t read_keys(const char* file_name, std::vector<std::string>& keys) {
+  std::ifstream ifs(file_name);
+  if (!ifs) {
+    return 0;
   }
 
-  void extract(std::vector<CharRange>& strings) const {
-    strings.clear();
-    strings.resize(offsets_.size() - 1);
-    for (size_t i = 0; i < strings.size(); ++i) {
-      strings[i] = {buffer_.data() + offsets_[i], buffer_.data() + offsets_[i + 1]};
+  size_t size = 0;
+  std::string line;
+
+  while (std::getline(ifs, line)) {
+    if (!line.empty()) {
+      keys.emplace_back(line);
+      size += line.length() + 1; // with terminator
     }
   }
+  return size;
+}
 
-  size_t raw_size() const { // including a terminators
-    return buffer_.size() + offsets_.size() - 1;
+void extract_pairs(const std::vector<std::string>& keys,
+                   std::vector<std::pair<const uint8_t*, size_t>>& pairs) {
+  pairs.clear();
+  pairs.resize(keys.size());
+  for (size_t i = 0; i < keys.size(); ++i) {
+    pairs[i] = {reinterpret_cast<const uint8_t*>(keys[i].c_str()), keys[i].length()};
   }
-
-  StringBuffer(const StringBuffer&) = delete;
-  StringBuffer& operator=(const StringBuffer&) = delete;
-
-private:
-  std::vector<uint8_t> buffer_;
-  std::vector<size_t> offsets_;
 };
 
 void show_usage(std::ostream& os) {
-  os << "xcdat build <type> <str> <dict>" << std::endl;
+  os << "xcdat build <type> <key> <dict>" << std::endl;
   os << "\t<type>\t'1' for DACs; '2' for FDACs." << std::endl;
-  os << "\t<str> \tinput file of the set of strings." << std::endl;
+  os << "\t<key> \tinput file of a set of keys." << std::endl;
   os << "\t<dict>\toutput file for storing the dictionary." << std::endl;
   os << "xcdat query <type> <dict> <limit>" << std::endl;
   os << "\t<type> \t'1' for DACs; '2' for FDACs." << std::endl;
   os << "\t<dict> \tinput file of the dictionary." << std::endl;
   os << "\t<limit>\tlimit at lookup (default=10)." << std::endl;
-  os << "xcdat bench <type> <dict> <str>" << std::endl;
+  os << "xcdat bench <type> <dict> <key>" << std::endl;
   os << "\t<type>\t'1' for DACs; '2' for FDACs." << std::endl;
   os << "\t<dict>\tinput file of the dictionary." << std::endl;
-  os << "\t<str> \tinput file of strings for benchmark." << std::endl;
+  os << "\t<key> \tinput file of keys for benchmark." << std::endl;
 }
 
 template<bool Fast>
@@ -107,32 +88,32 @@ int build(std::vector<std::string>& args) {
     return 1;
   }
 
-  StringBuffer buffer;
-  if (!buffer.load(args[2].c_str())) {
+  std::vector<std::string> keys;
+  auto raw_size = read_keys(args[2].c_str(), keys);
+
+  if (raw_size == 0) {
     std::cerr << "open error : " << args[2] << std::endl;
     return 1;
   }
 
-  std::vector<CharRange> strings;
-  buffer.extract(strings);
+  std::vector<std::pair<const uint8_t*, size_t>> pairs;
+  extract_pairs(keys, pairs);
 
   Trie<Fast> trie;
   try {
     StopWatch sw;
-    Trie<Fast>{strings}.swap(trie);
+    Trie<Fast>(pairs).swap(trie);
     std::cout << "constr. time: " << sw(Times::SEC) << " sec" << std::endl;
-  } catch (const xcdat::Exception& ex) {
-    std::cerr << ex.what() << " : " << ex.file_name() << " : "
-              << ex.line() << " : " << ex.func_name() << std::endl;
+  } catch (const xcdat::TrieBuilder::Exception& ex) {
+    std::cerr << ex.what() << std::endl;
     return 1;
   }
 
-  std::cout << "cmpr. ratio: " << (double) trie.size_in_bytes() / buffer.raw_size() << std::endl;
-  std::cout << "trie stat:" << std::endl;
+  std::cout << "cmpr. ratio: " << (double) trie.size_in_bytes() / raw_size << std::endl;
   trie.show_stat(std::cout);
 
   {
-    std::ofstream ofs{args[3]};
+    std::ofstream ofs(args[3]);
     if (!ofs) {
       std::cerr << "open error : " << args[3] << std::endl;
       return 1;
@@ -152,7 +133,7 @@ int query(std::vector<std::string>& args) {
 
   Trie<Fast> trie;
   {
-    std::ifstream ifs{args[2]};
+    std::ifstream ifs(args[2]);
     if (!ifs) {
       std::cerr << "open error : " << args[2] << std::endl;
       return 1;
@@ -166,7 +147,8 @@ int query(std::vector<std::string>& args) {
   }
 
   std::string query;
-  std::vector<uint32_t> ids;
+  std::vector<id_type> ids;
+  std::vector<uint8_t> buf;
 
   while (true){
     putchar('>');
@@ -175,8 +157,11 @@ int query(std::vector<std::string>& args) {
       break;
     }
 
+    auto key = reinterpret_cast<const uint8_t*>(query.c_str());
+    auto length = query.size();
+
     std::cout << "lookup()" << std::endl;
-    auto id = trie.lookup({query});
+    auto id = trie.lookup(key, length);
     if (id == kNotFound) {
       std::cout << "not found" << std::endl;
     } else {
@@ -185,18 +170,22 @@ int query(std::vector<std::string>& args) {
 
     std::cout << "common_prefix_lookup()" << std::endl;
     ids.clear();
-    trie.common_prefix_lookup({query}, ids);
+    trie.common_prefix_lookup(key, length, ids);
     std::cout << ids.size() << " found" << std::endl;
     for (size_t i = 0; i < std::min(ids.size(), limit); ++i) {
-      std::cout << ids[i] << '\t' << trie.access(ids[i]) << std::endl;
+      buf.clear();
+      trie.access(ids[i], buf);
+      std::cout << ids[i] << '\t' << buf.data() << std::endl;
     }
 
     std::cout << "predictive_lookup()" << std::endl;
     ids.clear();
-    trie.predictive_lookup({query}, ids);
+    trie.predictive_lookup(key, length, ids);
     std::cout << ids.size() << " found" << std::endl;
     for (size_t i = 0; i < std::min(ids.size(), limit); ++i) {
-      std::cout << ids[i] << '\t' << trie.access(ids[i]) << std::endl;
+      buf.clear();
+      trie.access(ids[i], buf);
+      std::cout << ids[i] << '\t' << buf.data() << std::endl;
     }
   }
 
@@ -212,7 +201,7 @@ int bench(std::vector<std::string>& args) {
 
   Trie<Fast> trie;
   {
-    std::ifstream ifs{args[2]};
+    std::ifstream ifs(args[2]);
     if (!ifs) {
       std::cerr << "open error : " << args[2] << std::endl;
       return 1;
@@ -220,18 +209,18 @@ int bench(std::vector<std::string>& args) {
     trie.read(ifs);
   }
 
-  StringBuffer buffer;
-  if (!buffer.load(args[3].c_str())) {
+  std::vector<std::string> keys;
+  if (read_keys(args[3].c_str(), keys) == 0) {
     std::cerr << "open error : " << args[3] << std::endl;
     return 1;
   }
 
-  std::vector<CharRange> strings;
-  buffer.extract(strings);
+  std::vector<std::pair<const uint8_t*, size_t>> pairs;
+  extract_pairs(keys, pairs);
 
-  std::vector<uint32_t> ids(strings.size());
-  for (size_t i = 0; i < strings.size(); ++i) {
-    ids[i] = trie.lookup(strings[i]);
+  std::vector<id_type> ids(pairs.size());
+  for (size_t i = 0; i < pairs.size(); ++i) {
+    ids[i] = trie.lookup(pairs[i].first, pairs[i].second);
   }
 
   {
@@ -239,15 +228,15 @@ int bench(std::vector<std::string>& args) {
 
     StopWatch sw;
     for (uint32_t r = 0; r < kRuns; ++r) {
-      for (size_t i = 0; i < strings.size(); ++i) {
-        if (trie.lookup(strings[i]) == kNotFound) {
-          std::cerr << "Failed to lookup " << strings[i] << std::endl;
+      for (size_t i = 0; i < pairs.size(); ++i) {
+        if (trie.lookup(pairs[i].first, pairs[i].second) == kNotFound) {
+          std::cerr << "Failed to lookup " << keys[i] << std::endl;
           return 1;
         }
       }
     }
 
-    std::cout << sw(Times::MICRO) / kRuns / strings.size() << " us per str" << std::endl;
+    std::cout << sw(Times::MICRO) / kRuns / pairs.size() << " us per str" << std::endl;
   }
 
   {
@@ -256,7 +245,8 @@ int bench(std::vector<std::string>& args) {
     StopWatch sw;
     for (uint32_t r = 0; r < kRuns; ++r) {
       for (size_t i = 0; i < ids.size(); ++i) {
-        if (trie.access(ids[i]).empty()) {
+        std::vector<uint8_t> key;
+        if (!trie.access(ids[i], key)) {
           std::cerr << "Failed to access " << ids[i] << std::endl;
           return 1;
         }

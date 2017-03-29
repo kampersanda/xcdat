@@ -2,7 +2,7 @@
 #define XCDAT_DAC_BC_HPP_
 
 #include "BitVector.hpp"
-#include "SmallVector.hpp"
+#include "FitVector.hpp"
 
 namespace xcdat {
 
@@ -11,27 +11,27 @@ namespace xcdat {
  * */
 class DacBc {
 public:
-  static constexpr uint32_t kFirstBits = 8;
+  static constexpr id_type kWidthL1 = 8;
 
   DacBc() {}
-  DacBc(const std::vector<BcElement>& bc);
+  DacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
 
   ~DacBc() {}
 
-  uint32_t base(uint32_t i) const {
+  id_type base(id_type i) const {
     return access_(i * 2) ^ i;
   }
-  uint32_t link(uint32_t i) const {
-    return values_[0][i * 2] | (links_[leaves_.rank(i)] << 8);
+  id_type link(id_type i) const {
+    return values_[0][i * 2] | (links_[leaf_flags_.rank(i)] << 8);
   }
-  uint32_t check(uint32_t i) const {
+  id_type check(id_type i) const {
     return access_(i * 2 + 1) ^ i;
   }
 
-  bool is_leaf(uint32_t i) const {
-    return leaves_[i];
+  bool is_leaf(id_type i) const {
+    return leaf_flags_[i];
   }
-  bool is_used(uint32_t i) const {
+  bool is_used(id_type i) const {
     return check(i) != i;
   }
 
@@ -57,14 +57,14 @@ public:
   DacBc& operator=(const DacBc&) = delete;
 
 private:
-  std::array<std::vector<uint8_t>, 4> values_;
-  std::array<BitVector, 3> flags_;
-  BitVector leaves_;
-  SmallVector links_;
+  std::array<Vector<uint8_t>, sizeof(id_type)> values_;
+  std::array<BitVector, sizeof(id_type) - 1> flags_;
+  BitVector leaf_flags_;
+  FitVector links_;
   uint8_t max_level_ = 0;
   size_t num_free_nodes_ = 0;
 
-  uint32_t access_(uint32_t i) const;
+  id_type access_(id_type i) const;
 };
 
 } //namespace - xcdat

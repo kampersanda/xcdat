@@ -7,19 +7,19 @@
 
 namespace xcdat {
 
-constexpr auto kNotFound = static_cast<uint32_t>(-1);
+constexpr auto kNotFound = static_cast<id_type>(-1);
 constexpr auto kDefaultLimit = static_cast<size_t>(-1);
 
 /*
- * Compressed string dictionary using an improved double-array trie. It includes two versions for
- * representing BASE/CHECK arrays: byte-oriented DACs and pointer-based ones.
+ * Compressed string dictionary using an improved double-array trie. There are two versions for
+ * representing BASE/CHECK arrays.
  *  @param Fast: the version of DACs representing BASE/CHECK arrays.
  * */
 template<bool Fast>
 class Trie {
 public:
   using Type = Trie<Fast>;
-  using BcType = typename std::conditional<Fast, FastDacBc, DacBc>::type;
+  using BcType = Conditional<Fast, FastDacBc, DacBc>;
 
   /*
    * Generic constructor.
@@ -27,12 +27,25 @@ public:
   Trie() {}
 
   /*
-   * Builds the dictionary from the given strings. The strings have to satisfy the following
-   * conditions: they are sorted in lexicographical order, they are not overlapped, and they
-   * do not include the ASCII zero code. If they are not satisfied, xcdat::Exception is thrown.
-   *  @param strings: the strings to be registered.
+   * Builds the dictionary from given string keys. The keys must be sorted in lexicographical order
+   * without duplication. Any error in construction is reported by TrieBuilder::Exception.
+   *  @param keys: the pairs of key pointers and lengths
+   *  @param binary_mode: whether the keys include the ASCII zero code or not
    * */
-  Trie(const std::vector<CharRange>& strings);
+  Trie(const std::vector<std::pair<const uint8_t*, size_t>>& keys, bool binary_mode = false) {
+    TrieBuilder builder(keys, BcType::kWidthL1, false);
+
+    BcType(builder.bc_, builder.leaf_flags_).swap(bc_);
+    BitVector(builder.term_flags_, true, true).swap(terminal_flags_);
+    tail_.steal(builder.tail_);
+    BitVector(builder.boundary_flags_, false, false).swap(boundary_flags_);
+    alphabet_.steal(builder.alphabet_);
+    table_ = builder.table_;
+
+    num_keys_ = keys.size();
+    max_length_ = builder.max_length_;
+    binary_mode_ = builder.binary_mode_;
+  }
 
   /*
    * Generic destructor.
@@ -40,49 +53,165 @@ public:
   ~Trie() {}
 
   /*
-   * Lookups the ID of the given string.
-   *  @param string: the query.
-   *  @returns the ID or kNotFound if the query is not in the dictionary.
+   * Lookups the ID of a given key.
+   *  @param key: key pointer.
+   *  @param length: key length.
+   *  @returns the ID if the query is registered; otherwise returns kNotFound.
    * */
-  uint32_t lookup(CharRange string) const;
+  id_type lookup(const uint8_t* key, size_t length) const {
+    id_type node_id = 0;
+    size_t i = 0;
 
-  /*
-   * Decodes the string associated with the given ID.
-   *  @param id: the ID.
-   *  @returns the string or an empty string if the ID is out of range.
-   * */
-  std::string access(uint32_t id) const;
+    while (!bc_.is_leaf(node_id)) {
+      if (i == length) {
+        return terminal_flags_[node_id] ? to_string_id_(node_id) : kNotFound;
+      }
+      const auto child_id = bc_.base(node_id) ^table_[key[i++]];
+      if (bc_.check(child_id) != node_id) {
+        return kNotFound;
+      }
+      node_id = child_id;
+    }
 
-  /*
-   * Enumerates the all IDs of the strings included as prefixes of the given string.
-   *  @param string: the query.
-   *  @param[out] ids: the IDs of the matched strings.
-   *  @param limit: the maximum number of matched strings (optional).
-   *  @returns the number of matched strings.
-   * */
-  size_t common_prefix_lookup(CharRange string, std::vector<uint32_t>& ids,
-                              size_t limit = kDefaultLimit) const;
-
-  /*
-   * Enumerates the all IDs of the strings starting with the given string.
-   *  @param string: the query.
-   *  @param[out] ids: the IDs of the matched strings.
-   *  @param limit: the maximum number of matched strings (optional).
-   *  @returns the number of matched strings.
-   * */
-  size_t predictive_lookup(CharRange string, std::vector<uint32_t>& ids,
-                           size_t limit = kDefaultLimit) const;
-
-  /*
-   * Gets the number of strings in the dictionary.
-   *  @returns the number of strings in the dictionary.
-   * */
-  size_t num_strings() const {
-    return num_strings_;
+    if (match_(key + i, length - i, bc_.link(node_id))) {
+      return to_string_id_(node_id);
+    }
+    return kNotFound;
   }
 
   /*
-   * Gets the size of alphabet drawing strings in the dictionary.
+   * Decodes the key associated with a given ID.
+   *  @param id: ID.
+   *  @param[out] ret: the decoded key.
+   *  @returns whether the given ID is within the range or not.
+   * */
+  bool access(id_type id, std::vector<uint8_t>& ret) const {
+    if (num_keys_ <= id) {
+      return false;
+    }
+
+    ret.reserve(ret.size() + max_length_);
+
+    auto node_id = to_node_id_(id);
+    auto link = bc_.is_leaf(node_id) ? bc_.link(node_id) : kNotFound;
+
+    while (node_id) {
+      const auto parent_id = bc_.check(node_id);
+      ret.emplace_back(edge_(parent_id, node_id));
+      node_id = parent_id;
+    }
+
+    std::reverse(std::begin(ret), std::end(ret));
+
+    if (link != 0 && link != kNotFound) {
+      if (binary_mode_) {
+        do {
+          ret.push_back(tail_[link]);
+        } while (!boundary_flags_[link++]);
+      } else {
+        do {
+          ret.push_back(tail_[link++]);
+        } while (tail_[link]);
+      }
+    }
+
+    return true;
+  }
+
+  /*
+   * Enumerates the IDs of keys included as prefixes of a given key.
+   *  @param key: key pointer.
+   *  @param length: key length.
+   *  @param[out] ids: IDs of matched keys.
+   *  @param limit: the maximum number of matched keys (optional).
+   *  @returns the number of matched keys.
+   * */
+  size_t common_prefix_lookup(const uint8_t* key, size_t length, std::vector<id_type>& ids,
+                              size_t limit = kDefaultLimit) const {
+    if (limit == 0) {
+      return 0;
+    }
+
+    id_type node_id = 0;
+    size_t i = 0, num_ids = 0;
+
+    while (!bc_.is_leaf(node_id)) {
+      if (terminal_flags_[node_id]) {
+        ids.push_back(to_string_id_(node_id));
+        ++num_ids;
+        if (num_ids == limit) {
+          return num_ids;
+        }
+      }
+      if (i == length) {
+        return num_ids;
+      }
+
+      const auto child_id = bc_.base(node_id) ^table_[key[i++]];
+
+      if (bc_.check(child_id) != node_id) {
+        return num_ids;
+      }
+
+      node_id = child_id;
+    }
+
+    if (match_(key + i, length - i, bc_.link(node_id))) {
+      ids.push_back(to_string_id_(node_id));
+      ++num_ids;
+    }
+
+    return num_ids;
+  }
+
+  /*
+   * Enumerates the IDs of keys starting with a given key.
+   *  @param key: key pointer.
+   *  @param length: key length.
+   *  @param[out] ids: IDs of matched keys.
+   *  @param limit: the maximum number of matched keys (optional).
+   *  @returns the number of matched keys.
+   * */
+  size_t predictive_lookup(const uint8_t* key, size_t length, std::vector<id_type>& ids,
+                           size_t limit = kDefaultLimit) const {
+    if (limit == 0) {
+      return 0;
+    }
+
+    id_type node_id = 0;
+    size_t i = 0;
+
+    for (; i < length; ++i) {
+      if (bc_.is_leaf(node_id)) {
+        if (prefix_match_(key + i, length - i, bc_.link(node_id))) {
+          ids.push_back(to_string_id_(node_id));
+          return 1;
+        }
+        return 0;
+      }
+
+      const auto child_id = bc_.base(node_id) ^table_[key[i]];
+      if (bc_.check(child_id) != node_id) {
+        return 0;
+      }
+      node_id = child_id;
+    }
+
+    size_t num_ids = 0;
+    enumerate_ids_(node_id, ids, num_ids, limit);
+    return num_ids;
+  }
+
+  /*
+   * Gets the number of keys in the dictionary.
+   *  @returns the number of keys in the dictionary.
+   * */
+  size_t num_keys() const {
+    return num_keys_;
+  }
+
+  /*
+   * Gets the size of alphabet drawing keys in the dictionary.
    *  @returns the alphabet size.
    * */
   size_t alphabet_size() const {
@@ -118,31 +247,92 @@ public:
    * Computes the size of the structure in bytes.
    *  @returns the dictionary size in bytes.
    * */
-  size_t size_in_bytes() const;
+  size_t size_in_bytes() const {
+    size_t ret = 0;
+    ret += bc_.size_in_bytes();
+    ret += terminal_flags_.size_in_bytes();
+    ret += tail_.size_in_bytes();
+    ret += boundary_flags_.size_in_bytes();
+    ret += alphabet_.size_in_bytes();
+    ret += sizeof(table_);
+    ret += sizeof(num_keys_);
+    ret += sizeof(max_length_);
+    return ret;
+  }
+
+  /*
+   * Gets the binary mode.
+   *  @returns the binary mode.
+   * */
+  bool is_binary_mode() const {
+    return binary_mode_;
+  }
 
   /*
    * Reports the dictionary statistics into an ostream.
    *  @param os: the ostream.
    * */
-  void show_stat(std::ostream& os) const;
+  void show_stat(std::ostream& os) const {
+    const auto total_size = size_in_bytes();
+    os << "basic statistics of xcdat::Trie" << std::endl;
+    show_size("\tnum keys:      ", num_keys(), os);
+    show_size("\talphabet size: ", alphabet_size(), os);
+    show_size("\tnum nodes:     ", num_nodes(), os);
+    show_size("\tnum used nodes:", num_used_nodes(), os);
+    show_size("\tnum free nodes:", num_free_nodes(), os);
+    show_size("\tsize in bytes: ", size_in_bytes(), os);
+    os << "member size statistics of xcdat::Trie" << std::endl;
+    show_size_ratio("\tbc:            ", bc_.size_in_bytes(), total_size, os);
+    show_size_ratio("\tterminal_flags:", terminal_flags_.size_in_bytes(), total_size, os);
+    show_size_ratio("\ttail:          ", tail_.size_in_bytes(), total_size, os);
+    show_size_ratio("\tboundary_flags:", boundary_flags_.size_in_bytes(), total_size, os);
+    bc_.show_stat(os);
+  }
 
   /*
    * Writes the dictionary into an ostream.
    *  @param os: the ostream.
    * */
-  void write(std::ostream& os) const;
+  void write(std::ostream& os) const {
+    bc_.write(os);
+    terminal_flags_.write(os);
+    tail_.write(os);
+    boundary_flags_.write(os);
+    alphabet_.write(os);
+    write_value(table_, os);
+    write_value(num_keys_, os);
+    write_value(max_length_, os);
+  }
 
   /*
    * Reads the dictionary from an istream.
    *  @param is: the istream.
    * */
-  void read(std::istream& is);
+  void read(std::istream& is) {
+    bc_.read(is);
+    terminal_flags_.read(is);
+    tail_.read(is);
+    boundary_flags_.read(is);
+    alphabet_.read(is);
+    read_value(table_, is);
+    read_value(num_keys_, is);
+    read_value(max_length_, is);
+  }
 
   /*
    * Swaps the dictionary.
    *  @param rhs: the dictionary to be swapped.
    * */
-  void swap(Type& rhs);
+  void swap(Type& rhs) {
+    bc_.swap(rhs.bc_);
+    terminal_flags_.swap(rhs.terminal_flags_);
+    tail_.swap(rhs.tail_);
+    boundary_flags_.swap(rhs.boundary_flags_);
+    alphabet_.swap(rhs.alphabet_);
+    table_.swap(rhs.table_);
+    std::swap(num_keys_, rhs.num_keys_);
+    std::swap(max_length_, rhs.max_length_);
+  }
 
   /*
    * Disallows copy and assignment.
@@ -152,276 +342,101 @@ public:
 
 private:
   BcType bc_;
-  BitVector terms_;
-  std::vector<uint8_t> tail_;
-  std::vector<uint8_t> alphabet_;
+  BitVector terminal_flags_;
+  Vector<uint8_t> tail_;
+  BitVector boundary_flags_; // if binary_mode_
+  Vector<uint8_t> alphabet_;
   std::array<uint8_t, 512> table_; // table[table[c] + 256] = c
 
-  size_t num_strings_ = 0;
+  size_t num_keys_ = 0;
   size_t max_length_ = 0;
+  bool binary_mode_ = false;
 
-  uint32_t to_string_id_(uint32_t node_id) const {
-    return terms_.rank(node_id);
+  id_type to_string_id_(id_type node_id) const {
+    return terminal_flags_.rank(node_id);
   };
-  uint32_t to_node_id_(uint32_t string_id) const {
-    return terms_.select(string_id);
+
+  id_type to_node_id_(id_type string_id) const {
+    return terminal_flags_.select(string_id);
   };
-  uint8_t edge_(uint32_t node_id, uint32_t child_id) const {
+
+  uint8_t edge_(id_type node_id, id_type child_id) const {
     return table_[static_cast<uint8_t>(bc_.base(node_id) ^ child_id) + 256];
   }
 
-  bool match_(CharRange string, uint32_t link) const;
-  bool prefix_match_(CharRange string, uint32_t link) const;
-  void enumerate_ids_(uint32_t node_id, std::vector<uint32_t>& ids,
-                      size_t& num_ids, size_t limit) const;
-};
-
-/*
- * Member functions
- * */
-
-template<bool Fast>
-Trie<Fast>::Trie(const std::vector<CharRange>& strings) {
-  TrieBuilder builder{strings, BcType::kFirstBits};
-
-  BcType{builder.bc_}.swap(bc_);
-  BitVector{builder.terms_, true}.swap(terms_);
-  tail_ = std::move(builder.tail_);
-  alphabet_ = std::move(builder.alphabet_);
-  table_ = builder.table_;
-
-  num_strings_ = strings.size();
-  max_length_ = builder.max_length_;
-}
-
-template<bool Fast>
-uint32_t Trie<Fast>::lookup(CharRange string) const {
-  uint32_t node_id = 0;
-
-  while (!bc_.is_leaf(node_id)) {
-    if (string.begin == string.end) {
-      return terms_[node_id] ? to_string_id_(node_id) : kNotFound;
+  bool match_(const uint8_t* key, size_t length, id_type link) const {
+    if (link == 0) {
+      return length == 0;
     }
 
-    const auto child_id = bc_.base(node_id) ^ table_[*string.begin++];
+    if (binary_mode_) {
+      for (size_t i = 0; i < length;) {
+        if (tail_[link] != key[i++]) {
+          return false;
+        }
+        if (boundary_flags_[link++]) {
+          return i == length;
+        }
+      }
+      return false;
+    } else {
+      auto tail = tail_.data() + link;
+      for (size_t i = 0; i < length; ++i) {
+        if (tail[i] == '\0' || key[i] != tail[i]) {
+          return false;
+        }
+      }
+      return tail[length] == '\0';
+    }
+  }
 
-    if (bc_.check(child_id) != node_id) {
-      return kNotFound;
+  bool prefix_match_(const uint8_t* key, size_t length, id_type link) const {
+    if (link == 0) {
+      return length == 0;
     }
 
-    node_id = child_id;
+    if (binary_mode_) {
+      for (size_t i = 0; i < length;) {
+        if (tail_[link] != key[i++]) {
+          return false;
+        }
+        if (boundary_flags_[link++]) {
+          return i == length;
+        }
+      }
+    } else {
+      auto tail = tail_.data() + link;
+      for (size_t i = 0; i < length; ++i) {
+        if (tail[i] == '\0' || key[i] != tail[i]) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
-  if (match_(string, bc_.link(node_id))) {
-    return to_string_id_(node_id);
-  }
-  return kNotFound;
-}
-
-template<bool Fast>
-std::string Trie<Fast>::access(uint32_t id) const {
-  if (num_strings_ <= id) {
-    return {};
-  }
-
-  std::string ret;
-  ret.reserve(max_length_);
-
-  auto node_id = to_node_id_(id);
-  const auto link = bc_.is_leaf(node_id) ? bc_.link(node_id) : kNotFound;
-
-  while (node_id) {
-    const auto parent_id = bc_.check(node_id);
-    ret += edge_(parent_id, node_id);
-    node_id = parent_id;
-  }
-
-  std::reverse(std::begin(ret), std::end(ret));
-  if (link != kNotFound) {
-    ret += reinterpret_cast<const char*>(tail_.data()) + link;
-  }
-
-  return ret; // expecting move semantics
-}
-
-template<bool Fast>
-size_t Trie<Fast>::common_prefix_lookup(CharRange string, std::vector<uint32_t>& ids,
-                                        size_t limit) const {
-  if (limit == 0) {
-    return 0;
-  }
-
-  uint32_t node_id = 0;
-  size_t num_ids = 0;
-
-  while (!bc_.is_leaf(node_id)) {
-    if (terms_[node_id]) {
+  void enumerate_ids_(id_type node_id, std::vector<id_type>& ids,
+                      size_t& num_ids, size_t limit) const {
+    if (terminal_flags_[node_id]) {
       ids.push_back(to_string_id_(node_id));
       ++num_ids;
+      if (bc_.is_leaf(node_id)) {
+        return;
+      }
+    }
+    const auto base = bc_.base(node_id);
+    for (const auto label : alphabet_) {
       if (num_ids == limit) {
-        return num_ids;
+        break;
+      }
+      const auto child_id = base ^table_[label];
+      if (bc_.check(child_id) == node_id) {
+        enumerate_ids_(child_id, ids, num_ids, limit);
       }
     }
-    if (string.begin == string.end) {
-      return num_ids;
-    }
-
-    const auto child_id = bc_.base(node_id) ^ table_[*string.begin++];
-
-    if (bc_.check(child_id) != node_id) {
-      return num_ids;
-    }
-
-    node_id = child_id;
   }
-
-  if (match_(string, bc_.link(node_id))) {
-    ids.push_back(to_string_id_(node_id));
-    ++num_ids;
-  }
-
-  return num_ids;
-}
-
-template<bool Fast>
-size_t Trie<Fast>::predictive_lookup(CharRange string, std::vector<uint32_t>& ids,
-                                     size_t limit) const {
-  if (limit == 0) {
-    return 0;
-  }
-
-  uint32_t node_id = 0;
-
-  for (; string.begin != string.end; ++string.begin) {
-    if (bc_.is_leaf(node_id)) {
-      if (prefix_match_(string, bc_.link(node_id))) {
-        ids.push_back(to_string_id_(node_id));
-        return 1;
-      }
-      return 0;
-    }
-
-    const auto child_id = bc_.base(node_id) ^ table_[*string.begin];
-
-    if (bc_.check(child_id) != node_id) {
-      return 0;
-    }
-    node_id = child_id;
-  }
-
-  size_t num_ids = 0;
-  enumerate_ids_(node_id, ids, num_ids, limit);
-  return num_ids;
-}
-
-template<bool Fast>
-size_t Trie<Fast>::size_in_bytes() const {
-  size_t ret = 0;
-  ret += bc_.size_in_bytes();
-  ret += terms_.size_in_bytes();
-  ret += size_vector(tail_);
-  ret += size_vector(alphabet_);
-  ret += sizeof(table_);
-  ret += sizeof(num_strings_);
-  ret += sizeof(max_length_);
-  return ret;
-}
-
-template<bool Fast>
-void Trie<Fast>::show_stat(std::ostream& os) const {
-  const auto total_size = size_in_bytes();
-  os << "basic statistics of xcdat::Trie" << std::endl;
-  show_size("\tnum strings:   ", num_strings(), os);
-  show_size("\talphabet size: ", alphabet_size(), os);
-  show_size("\tnum nodes:     ", num_nodes(), os);
-  show_size("\tnum used_nodes:", num_used_nodes(), os);
-  show_size("\tnum free_nodes:", num_free_nodes(), os);
-  show_size("\tsize in bytes: ", size_in_bytes(), os);
-  os << "member size statistics of xcdat::Trie" << std::endl;
-  show_size_ratio("\tbc_:      ", bc_.size_in_bytes(), total_size, os);
-  show_size_ratio("\tterms_:   ", terms_.size_in_bytes(), total_size, os);
-  show_size_ratio("\ttail_:    ", size_vector(tail_), total_size, os);
-  show_size_ratio("\talphabet_:", size_vector(alphabet_), total_size, os);
-  show_size_ratio("\ttable_:   ", sizeof(table_), total_size, os);
-  bc_.show_stat(os);
-}
-
-template<bool Fast>
-void Trie<Fast>::write(std::ostream& os) const {
-  bc_.write(os);
-  terms_.write(os);
-  write_vector(tail_, os);
-  write_vector(alphabet_, os);
-  write_value(table_, os);
-  write_value(num_strings_, os);
-  write_value(max_length_, os);
-}
-
-template<bool Fast>
-void Trie<Fast>::read(std::istream& is) {
-  bc_.read(is);
-  terms_.read(is);
-  read_vector(tail_, is);
-  read_vector(alphabet_, is);
-  read_value(table_, is);
-  read_value(num_strings_, is);
-  read_value(max_length_, is);
-}
-
-template<bool Fast>
-void Trie<Fast>::swap(Type& rhs) {
-  bc_.swap(rhs.bc_);
-  terms_.swap(rhs.terms_);
-  tail_.swap(rhs.tail_);
-  alphabet_.swap(rhs.alphabet_);
-  table_.swap(rhs.table_);
-  std::swap(num_strings_, rhs.num_strings_);
-  std::swap(max_length_, rhs.max_length_);
-}
-
-template<bool Fast>
-bool Trie<Fast>::match_(CharRange string, uint32_t link) const {
-  auto tail = tail_.data() + link;
-  for (auto it = string.begin; it != string.end; ++it, ++tail) {
-    if (*tail == '\0' || *it != *tail) {
-      return false;
-    }
-  }
-  return *tail == '\0';
-}
-
-template<bool Fast>
-bool Trie<Fast>::prefix_match_(CharRange string, uint32_t link) const {
-  auto tail = tail_.data() + link;
-  for (auto it = string.begin; it != string.end; ++it, ++tail) {
-    if (*tail == '\0' || *it != *tail) {
-      return false;
-    }
-  }
-  return true;
-}
-
-template<bool Fast>
-void Trie<Fast>::enumerate_ids_(uint32_t node_id, std::vector<uint32_t>& ids, size_t& num_ids,
-                                size_t limit) const {
-  if (terms_[node_id]) {
-    ids.push_back(to_string_id_(node_id));
-    ++num_ids;
-    if (bc_.is_leaf(node_id)) {
-      return;
-    }
-  }
-  const auto base = bc_.base(node_id);
-  for (const auto label : alphabet_) {
-    if (num_ids == limit) {
-      break;
-    }
-    const auto child_id = base ^ table_[label];
-    if (bc_.check(child_id) == node_id) {
-      enumerate_ids_(child_id, ids, num_ids, limit);
-    }
-  }
-}
+};
 
 } //namespace - xcdat
 

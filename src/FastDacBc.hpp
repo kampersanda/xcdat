@@ -4,7 +4,8 @@
 #include <tuple>
 
 #include "BitVector.hpp"
-#include "SmallVector.hpp"
+#include "FitVector.hpp"
+#include "Vector.hpp"
 
 namespace xcdat {
 
@@ -13,32 +14,43 @@ namespace xcdat {
  * */
 class FastDacBc {
 public:
-  static constexpr uint32_t kFirstBits = 7;
+  static constexpr id_type kWidthL1 = 7;
+#ifdef XCDAT64
+  static constexpr uint8_t kLayers = 4;
+#else
+  static constexpr uint8_t kLayers = 3;
+#endif
+
+  static constexpr id_type kBlockLenL1 = 1U << 7;
+  static constexpr id_type kBlockLenL2 = 1U << 15;
+#ifdef XCDAT64
+  static constexpr id_type kBlockLenL3 = 1U << 31;
+#endif
 
   FastDacBc() {}
-  FastDacBc(const std::vector<BcElement>& bc);
+  FastDacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
 
   ~FastDacBc() {}
 
-  uint32_t base(uint32_t i) const {
+  id_type base(id_type i) const {
     return access_(i * 2) ^ i;
   }
-  uint32_t link(uint32_t i) const {
-    return std::get<0>(values_)[i * 2] | (links_[leaves_.rank(i)] << 8);
+  id_type link(id_type i) const {
+    return values_L1_[i * 2] | (links_[leaf_flags_.rank(i)] << 8);
   }
-  uint32_t check(uint32_t i) const {
+  id_type check(id_type i) const {
     return access_(i * 2 + 1) ^ i;
   }
 
-  bool is_leaf(uint32_t i) const {
-    return leaves_[i];
+  bool is_leaf(id_type i) const {
+    return leaf_flags_[i];
   }
-  bool is_used(uint32_t i) const {
+  bool is_used(id_type i) const {
     return check(i) != i;
   }
 
   size_t num_nodes() const {
-    return std::get<0>(values_).size() / 2;
+    return values_L1_.size() / 2;
   }
   size_t num_used_nodes() const {
     return num_nodes() - num_free_nodes_;
@@ -60,17 +72,19 @@ public:
   FastDacBc& operator=(const FastDacBc&) = delete;
 
 private:
-  std::tuple<
-    std::vector<uint8_t>,
-    std::vector<uint16_t>,
-    std::vector<uint32_t>
-  > values_;
-  std::array<std::vector<uint32_t>, 2> ranks_;
-  BitVector leaves_;
-  SmallVector links_;
+  Vector<uint8_t> values_L1_;
+  Vector<uint16_t> values_L2_;
+  Vector<uint32_t> values_L3_;
+#ifdef XCDAT64
+  Vector<uint64_t> values_L4_;
+#endif
+  std::array<Vector<id_type>, kLayers - 1> ranks_;
+
+  BitVector leaf_flags_;
+  FitVector links_;
   size_t num_free_nodes_ = 0;
 
-  uint32_t access_(uint32_t i) const;
+  id_type access_(id_type i) const;
 };
 
 } //namespace - xcdat
