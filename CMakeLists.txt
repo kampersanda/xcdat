@@ -7,12 +7,16 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+if(NOT XCDAT64)
+  set(XCDAT64 OFF)
+endif()
+
 if(XCDAT64)
   add_definitions(-DXCDAT64)
 endif()
 
 message(STATUS "BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
-message(STATUS "BUILD_TYPE is ${XCDAT64}")
+message(STATUS "XCDAT64 is ${XCDAT64}")
 
 enable_testing()
 add_subdirectory(src)
