@@ -28,7 +28,7 @@ void test_bit_vector() {
     for (size_t i = 0; i < kSize; ++i) {
       builder.push_back(orig_bit_vector[i]);
     }
-    BitVector(builder, true, true).swap(bit_vector);
+    bit_vector = BitVector(builder, true, true);
   }
 
   assert(bit_vector.size() == kSize);

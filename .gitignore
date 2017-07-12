@@ -33,3 +33,4 @@ build/
 cmake-build-debug/
 .idea/
 .DS_Store
+src/xcdat_config.hpp

@@ -9,13 +9,11 @@
 
 namespace xcdat {
 
-/*
- * BASE/CHECK representation using pointer-based byte-oriented DACs.
- * */
+// BASE/CHECK representation using pointer-based byte-oriented DACs.
 class FastDacBc {
 public:
   static constexpr id_type kWidthL1 = 7;
-#ifdef XCDAT64
+#ifdef XCDAT_X64
   static constexpr uint8_t kLayers = 4;
 #else
   static constexpr uint8_t kLayers = 3;
@@ -23,11 +21,12 @@ public:
 
   static constexpr id_type kBlockLenL1 = 1U << 7;
   static constexpr id_type kBlockLenL2 = 1U << 15;
-#ifdef XCDAT64
+#ifdef XCDAT_X64
   static constexpr id_type kBlockLenL3 = 1U << 31;
 #endif
 
   FastDacBc() {}
+  FastDacBc(std::istream& is);
   FastDacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
 
   ~FastDacBc() {}
@@ -60,26 +59,23 @@ public:
   }
 
   size_t size_in_bytes() const;
-
   void show_stat(std::ostream& os) const;
-
   void write(std::ostream& os) const;
-  void read(std::istream& is);
-
-  void swap(FastDacBc& rhs);
 
   FastDacBc(const FastDacBc&) = delete;
   FastDacBc& operator=(const FastDacBc&) = delete;
+
+  FastDacBc(FastDacBc&&) = default;
+  FastDacBc& operator=(FastDacBc&&) = default;
 
 private:
   Vector<uint8_t> values_L1_;
   Vector<uint16_t> values_L2_;
   Vector<uint32_t> values_L3_;
-#ifdef XCDAT64
+#ifdef XCDAT_X64
   Vector<uint64_t> values_L4_;
 #endif
-  std::array<Vector<id_type>, kLayers - 1> ranks_;
-
+  Vector<id_type> ranks_[kLayers - 1];
   BitVector leaf_flags_;
   FitVector links_;
   size_t num_free_nodes_ = 0;

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <random>
 
-#include "Trie.hpp"
+#include "TrieBuilder.hpp"
 
 using namespace xcdat;
 
@@ -10,12 +10,14 @@ namespace {
 
 constexpr uint32_t kRuns = 10;
 
-enum class Times {
-  SEC, MILLI, MICRO
-};
+using Key = TrieBuilder::Key;
 
 class StopWatch {
 public:
+  enum Times {
+    SEC, MILLI, MICRO
+  };
+
   StopWatch() : tp_(std::chrono::high_resolution_clock::now()) {}
   ~StopWatch() {}
 
@@ -57,8 +59,7 @@ size_t read_keys(const char* file_name, std::vector<std::string>& keys) {
   return size;
 }
 
-void extract_pairs(const std::vector<std::string>& keys,
-                   std::vector<std::pair<const uint8_t*, size_t>>& pairs) {
+void extract_pairs(const std::vector<std::string>& keys, std::vector<Key>& pairs) {
   pairs.clear();
   pairs.resize(keys.size());
   for (size_t i = 0; i < keys.size(); ++i) {
@@ -70,7 +71,7 @@ void show_usage(std::ostream& os) {
   os << "xcdat build <type> <key> <dict>" << std::endl;
   os << "\t<type>\t'1' for DACs; '2' for FDACs." << std::endl;
   os << "\t<key> \tinput file of a set of keys." << std::endl;
-  os << "\t<dict>\toutput file for storing the dictionary." << std::endl;
+  os << "\t<dict>\toutput file of the dictionary." << std::endl;
   os << "xcdat query <type> <dict> <limit>" << std::endl;
   os << "\t<type> \t'1' for DACs; '2' for FDACs." << std::endl;
   os << "\t<dict> \tinput file of the dictionary." << std::endl;
@@ -88,22 +89,22 @@ int build(std::vector<std::string>& args) {
     return 1;
   }
 
-  std::vector<std::string> keys;
-  auto raw_size = read_keys(args[2].c_str(), keys);
+  std::vector<std::string> strs;
+  auto raw_size = read_keys(args[2].c_str(), strs);
 
   if (raw_size == 0) {
     std::cerr << "open error : " << args[2] << std::endl;
     return 1;
   }
 
-  std::vector<std::pair<const uint8_t*, size_t>> pairs;
-  extract_pairs(keys, pairs);
+  std::vector<Key> keys;
+  extract_pairs(strs, keys);
 
   Trie<Fast> trie;
   try {
     StopWatch sw;
-    Trie<Fast>(pairs).swap(trie);
-    std::cout << "constr. time: " << sw(Times::SEC) << " sec" << std::endl;
+    trie = TrieBuilder::build<Fast>(keys);
+    std::cout << "constr. time: " << sw(StopWatch::SEC) << " sec" << std::endl;
   } catch (const xcdat::TrieBuilder::Exception& ex) {
     std::cerr << ex.what() << std::endl;
     return 1;
@@ -138,7 +139,7 @@ int query(std::vector<std::string>& args) {
       std::cerr << "open error : " << args[2] << std::endl;
       return 1;
     }
-    trie.read(ifs);
+    trie = Trie<Fast>(ifs);
   }
 
   size_t limit = 10;
@@ -172,20 +173,26 @@ int query(std::vector<std::string>& args) {
     ids.clear();
     trie.common_prefix_lookup(key, length, ids);
     std::cout << ids.size() << " found" << std::endl;
+
     for (size_t i = 0; i < std::min(ids.size(), limit); ++i) {
       buf.clear();
       trie.access(ids[i], buf);
-      std::cout << ids[i] << '\t' << buf.data() << std::endl;
+      std::cout << ids[i] << '\t';
+      std::cout.write(reinterpret_cast<const char*>(buf.data()), buf.size());
+      std::cout << std::endl;
     }
 
     std::cout << "predictive_lookup()" << std::endl;
     ids.clear();
     trie.predictive_lookup(key, length, ids);
     std::cout << ids.size() << " found" << std::endl;
+
     for (size_t i = 0; i < std::min(ids.size(), limit); ++i) {
       buf.clear();
       trie.access(ids[i], buf);
-      std::cout << ids[i] << '\t' << buf.data() << std::endl;
+      std::cout << ids[i] << '\t';
+      std::cout.write(reinterpret_cast<const char*>(buf.data()), buf.size());
+      std::cout << std::endl;
     }
   }
 
@@ -206,21 +213,21 @@ int bench(std::vector<std::string>& args) {
       std::cerr << "open error : " << args[2] << std::endl;
       return 1;
     }
-    trie.read(ifs);
+    trie = Trie<Fast>(ifs);
   }
 
-  std::vector<std::string> keys;
-  if (read_keys(args[3].c_str(), keys) == 0) {
+  std::vector<std::string> strs;
+  if (read_keys(args[3].c_str(), strs) == 0) {
     std::cerr << "open error : " << args[3] << std::endl;
     return 1;
   }
 
-  std::vector<std::pair<const uint8_t*, size_t>> pairs;
-  extract_pairs(keys, pairs);
+  std::vector<Key> keys;
+  extract_pairs(strs, keys);
 
-  std::vector<id_type> ids(pairs.size());
-  for (size_t i = 0; i < pairs.size(); ++i) {
-    ids[i] = trie.lookup(pairs[i].first, pairs[i].second);
+  std::vector<id_type> ids(keys.size());
+  for (size_t i = 0; i < keys.size(); ++i) {
+    ids[i] = trie.lookup(keys[i].ptr, keys[i].length);
   }
 
   {
@@ -228,15 +235,15 @@ int bench(std::vector<std::string>& args) {
 
     StopWatch sw;
     for (uint32_t r = 0; r < kRuns; ++r) {
-      for (size_t i = 0; i < pairs.size(); ++i) {
-        if (trie.lookup(pairs[i].first, pairs[i].second) == kNotFound) {
-          std::cerr << "Failed to lookup " << keys[i] << std::endl;
+      for (size_t i = 0; i < keys.size(); ++i) {
+        if (trie.lookup(keys[i].ptr, keys[i].length) == kNotFound) {
+          std::cerr << "Failed to lookup " << strs[i] << std::endl;
           return 1;
         }
       }
     }
 
-    std::cout << sw(Times::MICRO) / kRuns / pairs.size() << " us per str" << std::endl;
+    std::cout << sw(StopWatch::MICRO) / kRuns / keys.size() << " us per str" << std::endl;
   }
 
   {
@@ -253,7 +260,7 @@ int bench(std::vector<std::string>& args) {
       }
     }
 
-    std::cout << sw(Times::MICRO) / kRuns / ids.size() << " us per ID" << std::endl;
+    std::cout << sw(StopWatch::MICRO) / kRuns / ids.size() << " us per ID" << std::endl;
   }
 
   return 0;

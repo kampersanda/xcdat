@@ -5,32 +5,36 @@
 #ifndef XCDAT_VECTOR_HPP
 #define XCDAT_VECTOR_HPP
 
-#include "xcdatBasics.hpp"
+#include "xcdat_basics.hpp"
 
 namespace xcdat {
 
-/*
- * Simple vector
- * */
+// Simple vector
 template<typename T>
 class Vector {
 public:
   Vector() {
-    static_assert(!Is_same<T, bool>(), "Type bool is not supported.");
-    static_assert(Is_pod<T>(), "T is not POD.");
+    static_assert(!std::is_same<T, bool>::value, "Type bool is not supported.");
+    static_assert(std::is_pod<T>::value, "T is not POD.");
   }
 
-  ~Vector() {}
+  Vector(std::istream& is) {
+    size_ = read_value<size_t>(is);
+    vec_.resize(size_);
+    is.read(reinterpret_cast<char*>(&vec_[0]), sizeof(T) * size_);
+    data_ = vec_.data();
+  }
 
-  void steal(std::vector<T>& vec) {
-    Vector().swap(*this);
+  Vector(std::vector<T>& vec) {
     if (vec.size() != vec.capacity()) {
       vec.shrink_to_fit();
     }
-    buf_.swap(vec);
-    data_ = buf_.data();
-    size_ = buf_.size();
+    vec_ = std::move(vec);
+    data_ = vec_.data();
+    size_ = vec_.size();
   }
+
+  ~Vector() {}
 
   const T& operator[](size_t i) const {
     return data_[i];
@@ -63,27 +67,16 @@ public:
     os.write(reinterpret_cast<const char*>(data_), sizeof(T) * size_);
   }
 
-  void read(std::istream& is) {
-    Vector().swap(*this);
-    read_value(size_, is);
-    buf_.resize(size_);
-    is.read(reinterpret_cast<char*>(&buf_[0]), sizeof(T) * size_);
-    data_ = buf_.data();
-  }
-
-  void swap(Vector<T>& rhs) {
-    std::swap(data_, rhs.data_);
-    std::swap(size_, rhs.size_);
-    buf_.swap(rhs.buf_);
-  }
-
   Vector(const Vector&) = delete;
   Vector& operator=(const Vector&) = delete;
+
+  Vector(Vector&&) = default;
+  Vector& operator=(Vector&&) = default;
 
 private:
   const T* data_ = nullptr;
   size_t size_ = 0;
-  std::vector<T> buf_;
+  std::vector<T> vec_;
 };
 
 }

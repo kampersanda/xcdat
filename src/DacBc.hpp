@@ -6,14 +6,13 @@
 
 namespace xcdat {
 
-/*
- * BASE/CHECK representation using byte-oriented DACs.
- * */
+// BASE/CHECK representation using byte-oriented DACs.
 class DacBc {
 public:
   static constexpr id_type kWidthL1 = 8;
 
   DacBc() {}
+  DacBc(std::istream &is);
   DacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
 
   ~DacBc() {}
@@ -49,16 +48,16 @@ public:
   void show_stat(std::ostream &os) const;
 
   void write(std::ostream &os) const;
-  void read(std::istream &is);
-
-  void swap(DacBc& rhs);
 
   DacBc(const DacBc&) = delete;
   DacBc& operator=(const DacBc&) = delete;
 
+  DacBc(DacBc&&) = default;
+  DacBc& operator=(DacBc&&) = default;
+
 private:
-  std::array<Vector<uint8_t>, sizeof(id_type)> values_;
-  std::array<BitVector, sizeof(id_type) - 1> flags_;
+  Vector<uint8_t> values_[sizeof(id_type)];
+  BitVector flags_[sizeof(id_type) - 1];
   BitVector leaf_flags_;
   FitVector links_;
   uint8_t max_level_ = 0;

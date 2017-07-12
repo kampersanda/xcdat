@@ -2,36 +2,43 @@
 
 namespace xcdat {
 
-FitVector::FitVector(const std::vector<id_type>& integers) {
-  if (integers.empty()) {
+FitVector::FitVector(std::istream& is) {
+  chunks_ = Vector<id_type>(is);
+  size_= read_value<size_t>(is);
+  width_ = read_value<id_type>(is);
+  mask_ = read_value<id_type>(is);
+}
+
+FitVector::FitVector(const std::vector<id_type>& values) {
+  if (values.empty()) {
     return;
   }
 
   width_ = 0;
-  auto max_value = *std::max_element(std::begin(integers), std::end(integers));
+  auto max_value = *std::max_element(std::begin(values), std::end(values));
   do {
     ++width_;
     max_value >>= 1;
   } while (max_value);
 
-  size_ = integers.size();
+  size_ = values.size();
   mask_ = (1U << width_) - 1;
   std::vector<id_type> chunks(size_ * width_ / kChunkWidth + 1, 0);
 
   for (id_type i = 0; i < size_; ++i) {
-    const auto chunk_pos = i * width_ / kChunkWidth;
-    const auto offset = i * width_ % kChunkWidth;
+    const auto chunk_pos = static_cast<id_type>(i * width_ / kChunkWidth);
+    const auto offset = static_cast<id_type>(i * width_ % kChunkWidth);
 
     chunks[chunk_pos] &= ~(mask_ << offset);
-    chunks[chunk_pos] |= (integers[i] & mask_) << offset;
+    chunks[chunk_pos] |= (values[i] & mask_) << offset;
 
     if (kChunkWidth < offset + width_) {
       chunks[chunk_pos + 1] &= ~(mask_ >> (kChunkWidth - offset));
-      chunks[chunk_pos + 1] |= (integers[i] & mask_) >> (kChunkWidth - offset);
+      chunks[chunk_pos + 1] |= (values[i] & mask_) >> (kChunkWidth - offset);
     }
   }
 
-  chunks_.steal(chunks);
+  chunks_ = Vector<id_type>(chunks);
 }
 
 size_t FitVector::size_in_bytes() const {
@@ -48,20 +55,6 @@ void FitVector::write(std::ostream& os) const {
   write_value(size_, os);
   write_value(width_, os);
   write_value(mask_, os);
-}
-
-void FitVector::read(std::istream& is) {
-  chunks_.read(is);
-  read_value(size_, is);
-  read_value(width_, is);
-  read_value(mask_, is);
-}
-
-void FitVector::swap(FitVector& rhs) {
-  chunks_.swap(rhs.chunks_);
-  std::swap(size_, rhs.size_);
-  std::swap(width_, rhs.width_);
-  std::swap(mask_, rhs.mask_);
 }
 
 } //namespace - xcdat

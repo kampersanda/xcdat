@@ -1,0 +1,7 @@
+#ifndef XCDAT_CONFIG_HPP
+#define XCDAT_CONFIG_HPP
+
+#cmakedefine XCDAT_X64
+#cmakedefine XCDAT_USE_POPCNT
+
+#endif // XCDAT_CONFIG_HPP

@@ -1,3 +1,5 @@
+#include <popcntintrin.h>
+
 #include "BitVector.hpp"
 
 namespace xcdat {
@@ -169,12 +171,24 @@ constexpr uint8_t kSelectTable[9][256] = {
 };
 
 uint32_t pop_count(uint32_t bits) {
+#ifdef XCDAT_USE_POPCNT
+  return static_cast<uint32_t>(_mm_popcnt_u32(bits));
+#else
   bits = ((bits & 0xAAAAAAAA) >> 1) + (bits & 0x55555555);
   bits = ((bits & 0xCCCCCCCC) >> 2) + (bits & 0x33333333);
   bits = ((bits >> 4) + bits) & 0x0F0F0F0F;
   bits += bits >> 8;
   bits += bits >> 16;
   return bits & 0x3F;
+#endif
+}
+
+BitVector::BitVector(std::istream& is) {
+  bits_ = Vector<uint32_t>(is);
+  rank_tips_ = Vector<RankTip>(is);
+  select_tips_ = Vector<id_type>(is);
+  size_ = read_value<size_t>(is);
+  num_1s_ = read_value<size_t>(is);
 }
 
 BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag) {
@@ -182,7 +196,7 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag
     return;
   }
 
-  bits_.steal(builder.bits_);
+  bits_ = Vector<uint32_t>(builder.bits_);
   size_ = builder.size_;
   num_1s_ = builder.num_1s_;
 
@@ -201,7 +215,7 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag
         }
       }
     }
-    rank_tips_.steal(rank_tips);
+    rank_tips_ = Vector<RankTip>(rank_tips);
   }
 
   // builds select_tips_
@@ -215,7 +229,7 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag
       }
     }
     select_tips.push_back(static_cast<id_type>(rank_tips_.size() - 1));
-    select_tips_.steal(select_tips);
+    select_tips_ = Vector<id_type>(select_tips);
   }
 }
 
@@ -229,7 +243,7 @@ id_type BitVector::select(size_t i) const {
   id_type left = 0, right = static_cast<id_type>(rank_tips_.size());
 
   if (!select_tips_.is_empty()) {
-    id_type select_tip_id = i / kNum1sPerTip;
+    auto select_tip_id = static_cast<id_type>(i / kNum1sPerTip);
     left = select_tips_[select_tip_id];
     right = select_tips_[select_tip_id + 1] + 1;
   }
@@ -294,22 +308,6 @@ void BitVector::write(std::ostream& os) const {
   select_tips_.write(os);
   write_value(size_, os);
   write_value(num_1s_, os);
-}
-
-void BitVector::read(std::istream& is) {
-  bits_.read(is);
-  rank_tips_.read(is);
-  select_tips_.read(is);
-  read_value(size_, is);
-  read_value(num_1s_, is);
-}
-
-void BitVector::swap(BitVector& rhs) {
-  bits_.swap(rhs.bits_);
-  rank_tips_.swap(rhs.rank_tips_);
-  select_tips_.swap(rhs.select_tips_);
-  std::swap(size_, rhs.size_);
-  std::swap(num_1s_, rhs.num_1s_);
 }
 
 } //namespace - xcdat

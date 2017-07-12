@@ -11,24 +11,17 @@
 #include <utility>
 #include <vector>
 
+#include "xcdat_config.hpp"
+
 namespace xcdat {
 
-#ifdef XCDAT64
+#ifdef XCDAT_X64
 using id_type = uint64_t;
 #else
 using id_type = uint32_t;
 #endif
 
-constexpr id_type kIdUpper = std::numeric_limits<id_type>::max();
-
-template<bool B, typename T, typename F>
-using Conditional = typename std::conditional<B, T, F>::type;
-
-template<typename T, typename U>
-inline constexpr bool Is_same() { return std::is_same<T, U>::value; }
-
-template<typename T>
-inline constexpr bool Is_pod() { return std::is_pod<T>::value; }
+constexpr id_type kIdMax = std::numeric_limits<id_type>::max();
 
 struct BcPair {
   id_type base;
@@ -44,7 +37,7 @@ inline void show_size(const char* str, size_t size, std::ostream& os) {
 }
 
 inline void show_size_ratio(const char* str, size_t size, size_t denom, std::ostream& os) {
-  os << str << "\t" << size << "\t" << (double) size / denom << std::endl;
+  os << str << "\t" << size << "\t" << static_cast<double>(size) / denom << std::endl;
 }
 
 template<typename T>
@@ -53,8 +46,10 @@ inline void write_value(const T val, std::ostream& os) {
 }
 
 template<typename T>
-inline void read_value(T& val, std::istream& is) {
+inline T read_value(std::istream& is) {
+  T val;
   is.read(reinterpret_cast<char*>(&val), sizeof(val));
+  return val;
 }
 
 } //namespace - xcdat

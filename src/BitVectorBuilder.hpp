@@ -1,27 +1,23 @@
 #ifndef XCDAT_BIT_VECTOR_BUILDER_HPP_
 #define XCDAT_BIT_VECTOR_BUILDER_HPP_
 
-#include "xcdatBasics.hpp"
+#include "xcdat_basics.hpp"
 
 namespace xcdat {
 
-/*
- *  Bit pool for building BitVector.
- * */
+// Bit pool for building BitVector.
 class BitVectorBuilder {
 public:
   friend class BitVector;
 
   BitVectorBuilder() {}
-  BitVectorBuilder(size_t size) {
-    resize(size);
-  }
+  BitVectorBuilder(size_t size) { resize(size); }
 
   ~BitVectorBuilder() {}
 
   void push_back(bool bit) {
     if (size_ % 32 == 0) {
-      bits_.emplace_back(0);
+      bits_.push_back(0);
     }
     if (bit) {
       set_bit(size_, true);

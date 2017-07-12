@@ -4,16 +4,29 @@
 
 namespace xcdat {
 
+DacBc::DacBc(std::istream& is) {
+  for (size_t i = 0; i < sizeof(id_type); ++i) {
+    values_[i] = Vector<uint8_t>(is);
+  }
+  for (size_t i = 0; i < sizeof(id_type) - 1; ++i) {
+    flags_[i] = BitVector(is);
+  }
+  leaf_flags_ = BitVector(is);
+  links_ = FitVector(is);
+  max_level_ = read_value<uint8_t>(is);
+  num_free_nodes_ = read_value<size_t>(is);
+}
+
 DacBc::DacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags) {
   if (bc.empty()) {
     return;
   }
 
-  std::array<std::vector<uint8_t>, sizeof(id_type)> values;
-  std::array<BitVectorBuilder, sizeof(id_type)> flags;
+  std::vector<uint8_t> values[sizeof(id_type)];
+  BitVectorBuilder flags[sizeof(id_type)];
   std::vector<id_type> links;
 
-  BitVector(leaf_flags, true, false).swap(leaf_flags_);
+  leaf_flags_ = BitVector(leaf_flags, true, false);
 
   values[0].reserve(bc.size() * 2);
   flags[0].reserve(bc.size() * 2);
@@ -56,11 +69,11 @@ DacBc::DacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags) {
 
   // release
   for (uint8_t i = 0; i < max_level_; ++i) {
-    values_[i].steal(values[i]);
-    BitVector(flags[i], true, false).swap(flags_[i]);
+    values_[i] = Vector<uint8_t>(values[i]);
+    flags_[i] = BitVector(flags[i], true, false);
   }
-  values_[max_level_].steal(values[max_level_]);
-  FitVector(links).swap(links_);
+  values_[max_level_] = Vector<uint8_t>(values[max_level_]);
+  links_ = FitVector(links);
 }
 
 size_t DacBc::size_in_bytes() const {
@@ -109,32 +122,6 @@ void DacBc::write(std::ostream& os) const {
   links_.write(os);
   write_value(max_level_, os);
   write_value(num_free_nodes_, os);
-}
-
-void DacBc::read(std::istream& is) {
-  for (auto& values : values_) {
-    values.read(is);
-   }
-  for (auto& flags : flags_) {
-    flags.read(is);
-  }
-  leaf_flags_.read(is);
-  links_.read(is);
-  read_value(max_level_, is);
-  read_value(num_free_nodes_, is);
-}
-
-void DacBc::swap(DacBc& rhs) {
-  for (uint32_t i = 0; i < values_.size(); ++i) {
-    values_[i].swap(rhs.values_[i]);
-  }
-  for (uint32_t i = 0; i < flags_.size(); ++i) {
-    flags_[i].swap(rhs.flags_[i]);
-  }
-  leaf_flags_.swap(rhs.leaf_flags_);
-  links_.swap(rhs.links_);
-  std::swap(max_level_, rhs.max_level_);
-  std::swap(num_free_nodes_, rhs.num_free_nodes_);
 }
 
 id_type DacBc::access_(id_type i) const {

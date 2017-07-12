@@ -6,13 +6,11 @@
 
 namespace xcdat {
 
-/*
- * Bit vector supporting Rank/Select operations.
- * */
+// Bit vector supporting Rank/Select operations.
 class BitVector {
 public:
   BitVector() {}
-  // builder.width_ is stolen.
+  BitVector(std::istream &is);
   BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag);
 
   ~BitVector() {}
@@ -21,8 +19,10 @@ public:
     return (bits_[i / 32] & (1U << (i % 32))) != 0;
   }
 
-  id_type rank(size_t i) const; // the number of 1s in B[0,i).
-  id_type select(size_t i) const; // the position of the i+1 th occurrence.
+  // the number of 1s in B[0,i).
+  id_type rank(size_t i) const;
+  // the position of the i+1 th occurrence.
+  id_type select(size_t i) const;
 
   size_t num_1s() const {
     return num_1s_;
@@ -31,18 +31,19 @@ public:
     return size_ - num_1s_;
   }
 
-  size_t size() const { // the number of bits
+  // the number of bits
+  size_t size() const {
     return size_;
   }
   size_t size_in_bytes() const;
 
   void write(std::ostream &os) const;
-  void read(std::istream &is);
-
-  void swap(BitVector& rhs);
 
   BitVector(const BitVector&) = delete;
   BitVector& operator=(const BitVector&) = delete;
+
+  BitVector(BitVector&&) = default;
+  BitVector& operator=(BitVector&&) = default;
 
 private:
   static constexpr id_type kBitsInR1 = 256;
@@ -52,7 +53,7 @@ private:
 
   struct RankTip {
     id_type L1;
-    std::array<uint8_t, kR1PerR2> L2;
+    uint8_t L2[kR1PerR2];
   };
 
   Vector<uint32_t> bits_;

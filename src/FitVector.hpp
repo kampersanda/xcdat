@@ -5,21 +5,20 @@
 
 namespace xcdat {
 
-/*
- * Compressed integer vector.
- * */
+// Compacted integer vector.
 class FitVector {
 public:
   static constexpr id_type kChunkWidth = sizeof(id_type) * 8;
 
   FitVector() {}
-  FitVector(const std::vector<id_type>& integers);
+  FitVector(std::istream &is);
+  FitVector(const std::vector<id_type>& values);
 
   ~FitVector() {}
 
   id_type operator[](size_t i) const {
-    id_type chunk_pos = i * width_ / kChunkWidth;
-    id_type offset = i * width_ % kChunkWidth;
+    auto chunk_pos = static_cast<id_type>(i * width_ / kChunkWidth);
+    auto offset = static_cast<id_type>(i * width_ % kChunkWidth);
     if (offset + width_ <= kChunkWidth) {
       return (chunks_[chunk_pos] >> offset) & mask_;
     } else {
@@ -32,12 +31,12 @@ public:
   size_t size_in_bytes() const;
 
   void write(std::ostream &os) const;
-  void read(std::istream &is);
-
-  void swap(FitVector& rhs);
 
   FitVector(const FitVector&) = delete;
   FitVector& operator=(const FitVector&) = delete;
+
+  FitVector(FitVector&&) = default;
+  FitVector& operator=(FitVector&&) = default;
 
 private:
   Vector<id_type> chunks_;
