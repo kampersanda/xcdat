@@ -9,13 +9,13 @@ namespace xcdat {
 // BASE/CHECK representation using byte-oriented DACs.
 class DacBc {
 public:
-  static constexpr id_type kWidthL1 = 8;
+  static constexpr id_type kWidthL1 {8};
 
-  DacBc() {}
-  DacBc(std::istream &is);
-  DacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
+  DacBc() = default;
+  ~DacBc() = default;
 
-  ~DacBc() {}
+  explicit DacBc(std::istream &is);
+  explicit DacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
 
   id_type base(id_type i) const {
     return access_(i * 2) ^ i;
@@ -52,16 +52,16 @@ public:
   DacBc(const DacBc&) = delete;
   DacBc& operator=(const DacBc&) = delete;
 
-  DacBc(DacBc&&) = default;
-  DacBc& operator=(DacBc&&) = default;
+  DacBc(DacBc&&) noexcept = default;
+  DacBc& operator=(DacBc&&) noexcept = default;
 
 private:
-  Vector<uint8_t> values_[sizeof(id_type)];
-  BitVector flags_[sizeof(id_type) - 1];
-  BitVector leaf_flags_;
-  FitVector links_;
-  uint8_t max_level_ = 0;
-  size_t num_free_nodes_ = 0;
+  Vector<uint8_t> values_[sizeof(id_type)] {};
+  BitVector flags_[sizeof(id_type) - 1] {};
+  BitVector leaf_flags_ {};
+  FitVector links_ {};
+  uint8_t max_level_ {};
+  size_t num_free_nodes_ {};
 
   id_type access_(id_type i) const;
 };

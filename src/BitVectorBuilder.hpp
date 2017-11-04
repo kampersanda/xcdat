@@ -10,10 +10,12 @@ class BitVectorBuilder {
 public:
   friend class BitVector;
 
-  BitVectorBuilder() {}
-  BitVectorBuilder(size_t size) { resize(size); }
+  BitVectorBuilder() = default;
+  ~BitVectorBuilder() = default;
 
-  ~BitVectorBuilder() {}
+  explicit BitVectorBuilder(size_t size) {
+    resize(size);
+  }
 
   void push_back(bool bit) {
     if (size_ % 32 == 0) {
@@ -52,9 +54,9 @@ public:
   BitVectorBuilder& operator=(const BitVectorBuilder&) = delete;
 
 private:
-  std::vector<uint32_t> bits_;
-  size_t size_ = 0;
-  size_t num_1s_ = 0;
+  std::vector<uint32_t> bits_ {};
+  size_t size_ {};
+  size_t num_1s_ {};
 };
 
 } //namespace - xcdat

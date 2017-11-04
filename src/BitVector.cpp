@@ -191,7 +191,8 @@ BitVector::BitVector(std::istream& is) {
   num_1s_ = read_value<size_t>(is);
 }
 
-BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag) {
+BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag,
+                     bool select_flag) {
   if (!builder.size()) {
     return;
   }

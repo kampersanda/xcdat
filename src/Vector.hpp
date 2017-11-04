@@ -13,19 +13,19 @@ namespace xcdat {
 template<typename T>
 class Vector {
 public:
-  Vector() {
-    static_assert(!std::is_same<T, bool>::value, "Type bool is not supported.");
-    static_assert(std::is_pod<T>::value, "T is not POD.");
-  }
+  static_assert(!std::is_same<T, bool>::value, "Type bool is not supported.");
+  static_assert(std::is_pod<T>::value, "T is not POD.");
 
-  Vector(std::istream& is) {
+  Vector() = default;
+
+  explicit Vector(std::istream& is) {
     size_ = read_value<size_t>(is);
     vec_.resize(size_);
     is.read(reinterpret_cast<char*>(&vec_[0]), sizeof(T) * size_);
     data_ = vec_.data();
   }
 
-  Vector(std::vector<T>& vec) {
+  explicit Vector(std::vector<T>& vec) {
     if (vec.size() != vec.capacity()) {
       vec.shrink_to_fit();
     }
@@ -34,7 +34,7 @@ public:
     size_ = vec_.size();
   }
 
-  ~Vector() {}
+  ~Vector() = default;
 
   const T& operator[](size_t i) const {
     return data_[i];
@@ -70,13 +70,13 @@ public:
   Vector(const Vector&) = delete;
   Vector& operator=(const Vector&) = delete;
 
-  Vector(Vector&&) = default;
-  Vector& operator=(Vector&&) = default;
+  Vector(Vector&&) noexcept = default;
+  Vector& operator=(Vector&&) noexcept = default;
 
 private:
-  const T* data_ = nullptr;
-  size_t size_ = 0;
-  std::vector<T> vec_;
+  const T* data_ {};
+  size_t size_ {};
+  std::vector<T> vec_ {};
 };
 
 }

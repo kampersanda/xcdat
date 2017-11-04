@@ -10,11 +10,11 @@ class FitVector {
 public:
   static constexpr id_type kChunkWidth = sizeof(id_type) * 8;
 
-  FitVector() {}
-  FitVector(std::istream &is);
-  FitVector(const std::vector<id_type>& values);
+  FitVector() = default;
+  explicit FitVector(std::istream &is);
+  explicit FitVector(const std::vector<id_type>& values);
 
-  ~FitVector() {}
+  ~FitVector() = default;
 
   id_type operator[](size_t i) const {
     auto chunk_pos = static_cast<id_type>(i * width_ / kChunkWidth);
@@ -35,14 +35,14 @@ public:
   FitVector(const FitVector&) = delete;
   FitVector& operator=(const FitVector&) = delete;
 
-  FitVector(FitVector&&) = default;
-  FitVector& operator=(FitVector&&) = default;
+  FitVector(FitVector&&) noexcept = default;
+  FitVector& operator=(FitVector&&) noexcept = default;
 
 private:
-  Vector<id_type> chunks_;
-  size_t size_ = 0;
-  id_type width_ = 0;
-  id_type mask_ = 0;
+  Vector<id_type> chunks_ {};
+  size_t size_ {};
+  id_type width_ {};
+  id_type mask_ {};
 };
 
 } //namespace - xcdat

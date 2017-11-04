@@ -14,31 +14,25 @@ using Key = TrieBuilder::Key;
 
 class StopWatch {
 public:
-  enum Times {
-    SEC, MILLI, MICRO
-  };
+  using hrc = std::chrono::high_resolution_clock;
 
-  StopWatch() : tp_(std::chrono::high_resolution_clock::now()) {}
-  ~StopWatch() {}
+  StopWatch() : tp_{hrc::now()} {}
 
-  double operator()(Times time) const {
-    const auto tp = std::chrono::high_resolution_clock::now() - tp_;
-    switch (time) {
-      case Times::SEC:
-        return std::chrono::duration<double>(tp).count();
-      case Times::MILLI:
-        return std::chrono::duration<double, std::milli>(tp).count();
-      case Times::MICRO:
-        return std::chrono::duration<double, std::micro>(tp).count();
-    }
-    return 0.0;
+  double sec() const {
+    const auto tp = hrc::now() - tp_;
+    return std::chrono::duration<double>(tp).count();
+  }
+  double milli_sec() const {
+    const auto tp = hrc::now() - tp_;
+    return std::chrono::duration<double, std::milli>(tp).count();
+  }
+  double micro_sec() const {
+    const auto tp = hrc::now() - tp_;
+    return std::chrono::duration<double, std::micro>(tp).count();
   }
 
-  StopWatch(const StopWatch&) = delete;
-  StopWatch& operator=(const StopWatch&) = delete;
-
 private:
-  std::chrono::high_resolution_clock::time_point tp_;
+  hrc::time_point tp_;
 };
 
 size_t read_keys(const char* file_name, std::vector<std::string>& keys) {
@@ -68,18 +62,19 @@ void extract_pairs(const std::vector<std::string>& keys, std::vector<Key>& pairs
 };
 
 void show_usage(std::ostream& os) {
-  os << "xcdat build <type> <key> <dict>" << std::endl;
-  os << "\t<type>\t'1' for DACs; '2' for FDACs." << std::endl;
-  os << "\t<key> \tinput file of a set of keys." << std::endl;
-  os << "\t<dict>\toutput file of the dictionary." << std::endl;
-  os << "xcdat query <type> <dict> <limit>" << std::endl;
-  os << "\t<type> \t'1' for DACs; '2' for FDACs." << std::endl;
-  os << "\t<dict> \tinput file of the dictionary." << std::endl;
-  os << "\t<limit>\tlimit at lookup (default=10)." << std::endl;
-  os << "xcdat bench <type> <dict> <key>" << std::endl;
-  os << "\t<type>\t'1' for DACs; '2' for FDACs." << std::endl;
-  os << "\t<dict>\tinput file of the dictionary." << std::endl;
-  os << "\t<key> \tinput file of keys for benchmark." << std::endl;
+  os << "xcdat build <type> <key> <dict>\n";
+  os << "\t<type>\t'1' for DACs; '2' for FDACs.\n";
+  os << "\t<key> \tinput file of a set of keys.\n";
+  os << "\t<dict>\toutput file of the dictionary.\n";
+  os << "xcdat query <type> <dict> <limit>\n";
+  os << "\t<type> \t'1' for DACs; '2' for FDACs.\n";
+  os << "\t<dict> \tinput file of the dictionary.\n";
+  os << "\t<limit>\tlimit at lookup (default=10).\n";
+  os << "xcdat bench <type> <dict> <key>\n";
+  os << "\t<type>\t'1' for DACs; '2' for FDACs.\n";
+  os << "\t<dict>\tinput file of the dictionary.\n";
+  os << "\t<key> \tinput file of keys for benchmark.\n";
+  os.flush();
 }
 
 template<bool Fast>
@@ -104,7 +99,7 @@ int build(std::vector<std::string>& args) {
   try {
     StopWatch sw;
     trie = TrieBuilder::build<Fast>(keys);
-    std::cout << "constr. time: " << sw(StopWatch::SEC) << " sec" << std::endl;
+    std::cout << "constr. time: " << sw.sec() << " sec" << std::endl;
   } catch (const xcdat::TrieBuilder::Exception& ex) {
     std::cerr << ex.what() << std::endl;
     return 1;
@@ -154,7 +149,7 @@ int query(std::vector<std::string>& args) {
   while (true){
     putchar('>');
     getline(std::cin, query);
-    if (query.size() == 0){
+    if (query.empty()){
       break;
     }
 
@@ -243,7 +238,7 @@ int bench(std::vector<std::string>& args) {
       }
     }
 
-    std::cout << sw(StopWatch::MICRO) / kRuns / keys.size() << " us per str" << std::endl;
+    std::cout << sw.micro_sec() / kRuns / keys.size() << " us per str" << std::endl;
   }
 
   {
@@ -260,7 +255,7 @@ int bench(std::vector<std::string>& args) {
       }
     }
 
-    std::cout << sw(StopWatch::MICRO) / kRuns / ids.size() << " us per ID" << std::endl;
+    std::cout << sw.micro_sec() / kRuns / ids.size() << " us per ID" << std::endl;
   }
 
   return 0;
@@ -276,13 +271,13 @@ int main(int argc, const char* argv[]) {
 
   std::vector<std::string> args;
   for (int i = 1; i < argc; ++i) {
-    args.push_back({argv[i]});
+    args.emplace_back(std::string{argv[i]});
   }
 
   bool is_fast;
-  if (args[1].front() == '1') {
+  if (args[1][0] == '1') {
     is_fast = false;
-  } else if (args[1].front() == '2') {
+  } else if (args[1][0] == '2') {
     is_fast = true;
   } else {
     show_usage(std::cerr);

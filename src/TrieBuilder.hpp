@@ -18,11 +18,13 @@ public:
     size_t length;
   };
 
-  // Builds the dictionary from given string keys. The keys must be sorted in lexicographical order
-  // without duplication. Any error in construction is reported by TrieBuilder::Exception. If the
-  // keys include the ASCII zero code, pass binary_mode = true.
+  // Builds the dictionary from given string keys. The keys must be sorted in
+  // lexicographical order without duplication. Any error in construction is
+  // reported by TrieBuilder::Exception. If the keys include the ASCII zero
+  // code, pass binary_mode = true.
   template<bool Fast>
-  static Trie<Fast> build(const std::vector<Key>& keys, bool binary_mode = false) {
+  static Trie<Fast> build(const std::vector<Key>& keys,
+                          bool binary_mode = false) {
     TrieBuilder builder(keys, Trie<Fast>::BcType::kWidthL1, binary_mode);
 
     Trie<Fast> trie;
@@ -31,7 +33,7 @@ public:
     trie.terminal_flags_ = BitVector(builder.term_flags_, true, true);
     trie.tail_ = Vector<uint8_t>(builder.tail_);
     trie.boundary_flags_ = BitVector(builder.boundary_flags_, false, false);
-    trie.alphabet_ = builder.alphabet_;
+    trie.alphabet_ = Vector<uint8_t>(builder.alphabet_);
     std::swap(trie.table_, builder.table_);
 
     trie.num_keys_ = keys.size();
@@ -44,11 +46,11 @@ public:
   // Exception class for xcdat::TrieBuilder
   class Exception : public std::exception {
   public:
-    explicit Exception(std::string message) : message_(message) {}
-    virtual ~Exception() throw() {}
+    explicit Exception(std::string message) : message_(std::move(message)) {}
+    ~Exception() throw() override {}
 
     // overrides what() of std::exception.
-    virtual const char* what() const throw() {
+    const char* what() const throw() override {
       return message_.c_str();
     }
 
@@ -83,25 +85,25 @@ private:
   const id_type block_size_;
   const id_type width_L1_;
 
-  bool binary_mode_ = false;
+  bool binary_mode_ {};
 
-  std::vector<BcPair> bc_;
-  BitVectorBuilder leaf_flags_;
-  BitVectorBuilder term_flags_;
-  std::vector<uint8_t> tail_;
-  BitVectorBuilder boundary_flags_;
-  std::vector<uint8_t> alphabet_;
-  uint8_t table_[512];
+  std::vector<BcPair> bc_ {};
+  BitVectorBuilder leaf_flags_ {};
+  BitVectorBuilder term_flags_ {};
+  std::vector<uint8_t> tail_ {};
+  BitVectorBuilder boundary_flags_ {};
+  std::vector<uint8_t> alphabet_ {};
+  uint8_t table_[512] {};
 
-  std::vector<bool> used_flags_;
-  std::vector<uint8_t> edges_;
-  std::vector<id_type> heads_;
-  std::vector<Suffix> suffixes_;
+  std::vector<bool> used_flags_ {};
+  std::vector<uint8_t> edges_ {};
+  std::vector<id_type> heads_ {};
+  std::vector<Suffix> suffixes_ {};
 
-  size_t max_length_ = 0;
+  size_t max_length_ {};
 
   TrieBuilder(const std::vector<Key>& keys, id_type width_L1, bool binary_mode);
-  ~TrieBuilder() {}
+  ~TrieBuilder() = default;
 
   void build_table_();
   void build_bc_(size_t begin, size_t end, size_t depth, id_type node_id);

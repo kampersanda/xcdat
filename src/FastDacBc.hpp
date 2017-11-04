@@ -25,11 +25,12 @@ public:
   static constexpr id_type kBlockLenL3 = 1U << 31;
 #endif
 
-  FastDacBc() {}
-  FastDacBc(std::istream& is);
-  FastDacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags);
+  FastDacBc() = default;
+  explicit FastDacBc(std::istream& is);
+  explicit FastDacBc(const std::vector<BcPair>& bc,
+                     BitVectorBuilder& leaf_flags);
 
-  ~FastDacBc() {}
+  ~FastDacBc() = default;
 
   id_type base(id_type i) const {
     return access_(i * 2) ^ i;
@@ -65,20 +66,20 @@ public:
   FastDacBc(const FastDacBc&) = delete;
   FastDacBc& operator=(const FastDacBc&) = delete;
 
-  FastDacBc(FastDacBc&&) = default;
-  FastDacBc& operator=(FastDacBc&&) = default;
+  FastDacBc(FastDacBc&&) noexcept = default;
+  FastDacBc& operator=(FastDacBc&&) noexcept = default;
 
 private:
-  Vector<uint8_t> values_L1_;
-  Vector<uint16_t> values_L2_;
-  Vector<uint32_t> values_L3_;
+  Vector<uint8_t> values_L1_ {};
+  Vector<uint16_t> values_L2_ {};
+  Vector<uint32_t> values_L3_ {};
 #ifdef XCDAT_X64
-  Vector<uint64_t> values_L4_;
+  Vector<uint64_t> values_L4_ {};
 #endif
-  Vector<id_type> ranks_[kLayers - 1];
-  BitVector leaf_flags_;
-  FitVector links_;
-  size_t num_free_nodes_ = 0;
+  Vector<id_type> ranks_[kLayers - 1] {};
+  BitVector leaf_flags_ {};
+  FitVector links_ {};
+  size_t num_free_nodes_ {};
 
   id_type access_(id_type i) const;
 };
