@@ -3,8 +3,10 @@
 
 namespace xcdat {
 
-TrieBuilder::TrieBuilder(const std::vector<Key>& keys, id_type width_L1, bool binary_mode)
-  : keys_(keys), block_size_(1U << width_L1), width_L1_(width_L1), binary_mode_(binary_mode) {
+TrieBuilder::TrieBuilder(const std::vector<Key>& keys,
+                         id_type width_L1, bool binary_mode)
+  : keys_(keys), block_size_(1U << width_L1), width_L1_(width_L1),
+    binary_mode_(binary_mode) {
   if (keys_.empty()) {
     throw TrieBuilder::Exception("The input data is empty.");
   }
@@ -13,16 +15,16 @@ TrieBuilder::TrieBuilder(const std::vector<Key>& keys, id_type width_L1, bool bi
   }
 
   {
-    size_t init_capacity = 1;
-    while (init_capacity < keys_.size()) {
-      init_capacity <<= 1;
+    size_t init_capa = 1;
+    while (init_capa < keys_.size()) {
+      init_capa <<= 1;
     }
 
-    bc_.reserve(init_capacity);
-    leaf_flags_.reserve(init_capacity);
-    term_flags_.reserve(init_capacity);
-    used_flags_.reserve(init_capacity);
-    heads_.reserve(init_capacity >> width_L1_);
+    bc_.reserve(init_capa);
+    leaf_flags_.reserve(init_capa);
+    term_flags_.reserve(init_capa);
+    used_flags_.reserve(init_capa);
+    heads_.reserve(init_capa >> width_L1_);
   }
 
   alphabet_.reserve(256);
@@ -94,7 +96,8 @@ void TrieBuilder::build_table_() {
   }
 }
 
-void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth, id_type node_id) {
+void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth,
+                            id_type node_id) {
   if (keys_[begin].length == depth) {
     term_flags_.set_bit(node_id, true);
     if (++begin == end) { // without link?
@@ -117,7 +120,9 @@ void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth, id_type node
       const auto _label = keys_[str_id].ptr[depth];
       if (label != _label) {
         if (_label < label) {
-          throw TrieBuilder::Exception("The input data is not in lexicographical order.");
+          throw TrieBuilder::Exception(
+            "The input data is not in lexicographical order."
+          );
         }
         edges_.push_back(label);
         label = _label;
@@ -177,13 +182,16 @@ void TrieBuilder::build_tail_() {
     }
 
     size_t match = 0;
-    while ((match < cur.length()) && (match < prev->length()) && ((*prev)[match] == cur[match])) {
+    while ((match < cur.length()) && (match < prev->length())
+           && ((*prev)[match] == cur[match])) {
       ++match;
     }
 
     if ((match == cur.length()) && (prev->length() != 0)) { // sharing
       bc_[cur.node_id].base =
-        static_cast<id_type>(bc_[prev->node_id].base + (prev->length() - match));
+        static_cast<id_type>(
+          bc_[prev->node_id].base + (prev->length() - match)
+        );
     } else { // append
       bc_[cur.node_id].base = static_cast<id_type>(tail_.size());
       for (size_t j = 0; j < cur.length(); ++j) {
@@ -276,7 +284,8 @@ id_type TrieBuilder::find_base_(id_type block_id) const {
   }
 
   // search in the same block
-  for (auto i = heads_[block_id]; i != kTabooId && i >> width_L1_ == block_id; i = bc_[i].base) {
+  for (auto i = heads_[block_id]; i != kTabooId && i >> width_L1_ == block_id;
+       i = bc_[i].base) {
     const auto base = i ^ table_[edges_[0]];
     if (is_target_(base)) {
       return base; // base / block_size_ == block_id

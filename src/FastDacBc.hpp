@@ -70,16 +70,16 @@ public:
   FastDacBc& operator=(FastDacBc&&) noexcept = default;
 
 private:
-  Vector<uint8_t> values_L1_ {};
-  Vector<uint16_t> values_L2_ {};
-  Vector<uint32_t> values_L3_ {};
+  Vector <uint8_t> values_L1_{};
+  Vector <uint16_t> values_L2_{};
+  Vector <uint32_t> values_L3_{};
 #ifdef XCDAT_X64
   Vector<uint64_t> values_L4_ {};
 #endif
-  Vector<id_type> ranks_[kLayers - 1] {};
-  BitVector leaf_flags_ {};
-  FitVector links_ {};
-  size_t num_free_nodes_ {};
+  Vector <id_type> ranks_[kLayers - 1]{};
+  BitVector leaf_flags_{};
+  FitVector links_{};
+  size_t num_free_nodes_{};
 
   id_type access_(id_type i) const;
 };

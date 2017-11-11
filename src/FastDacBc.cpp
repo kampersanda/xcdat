@@ -17,7 +17,8 @@ FastDacBc::FastDacBc(std::istream& is) {
   num_free_nodes_ = read_value<size_t>(is);
 }
 
-FastDacBc::FastDacBc(const std::vector<BcPair>& bc, BitVectorBuilder& leaf_flags) {
+FastDacBc::FastDacBc(const std::vector<BcPair>& bc,
+                     BitVectorBuilder& leaf_flags) {
   if (bc.empty()) {
     return;
   }

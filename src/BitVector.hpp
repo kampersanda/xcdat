@@ -10,20 +10,19 @@ namespace xcdat {
 class BitVector {
 public:
   BitVector() = default;
-  ~BitVector() = default;
-
   explicit BitVector(std::istream &is);
-  explicit BitVector(BitVectorBuilder& builder,
-                     bool rank_flag, bool select_flag);
+  BitVector(BitVectorBuilder& builder, bool rank_flag, bool select_flag);
+
+  ~BitVector() = default;
 
   bool operator[](size_t i) const {
     return (bits_[i / 32] & (1U << (i % 32))) != 0;
   }
 
   // the number of 1s in B[0,i).
-  id_type rank(size_t i) const;
+  id_type rank(id_type i) const;
   // the position of the i+1 th occurrence.
-  id_type select(size_t i) const;
+  id_type select(id_type i) const;
 
   size_t num_1s() const {
     return num_1s_;

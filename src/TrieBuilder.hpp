@@ -23,13 +23,13 @@ public:
   // reported by TrieBuilder::Exception. If the keys include the ASCII zero
   // code, pass binary_mode = true.
   template<bool Fast>
-  static Trie<Fast> build(const std::vector<Key>& keys,
-                          bool binary_mode = false) {
-    TrieBuilder builder(keys, Trie<Fast>::BcType::kWidthL1, binary_mode);
+  static Trie<Fast>
+  build(const std::vector<Key>& keys, bool binary_mode = false) {
+    TrieBuilder builder(keys, Trie<Fast>::bc_type::kWidthL1, binary_mode);
 
     Trie<Fast> trie;
 
-    trie.bc_ = typename Trie<Fast>::BcType(builder.bc_, builder.leaf_flags_);
+    trie.bc_ = typename Trie<Fast>::bc_type(builder.bc_, builder.leaf_flags_);
     trie.terminal_flags_ = BitVector(builder.term_flags_, true, true);
     trie.tail_ = Vector<uint8_t>(builder.tail_);
     trie.boundary_flags_ = BitVector(builder.boundary_flags_, false, false);
@@ -85,22 +85,22 @@ private:
   const id_type block_size_;
   const id_type width_L1_;
 
-  bool binary_mode_ {};
+  bool binary_mode_{};
 
-  std::vector<BcPair> bc_ {};
-  BitVectorBuilder leaf_flags_ {};
-  BitVectorBuilder term_flags_ {};
-  std::vector<uint8_t> tail_ {};
-  BitVectorBuilder boundary_flags_ {};
-  std::vector<uint8_t> alphabet_ {};
-  uint8_t table_[512] {};
+  std::vector<BcPair> bc_{};
+  BitVectorBuilder leaf_flags_{};
+  BitVectorBuilder term_flags_{};
+  std::vector<uint8_t> tail_{};
+  BitVectorBuilder boundary_flags_{};
+  std::vector<uint8_t> alphabet_{};
+  uint8_t table_[512]{};
 
-  std::vector<bool> used_flags_ {};
-  std::vector<uint8_t> edges_ {};
-  std::vector<id_type> heads_ {};
-  std::vector<Suffix> suffixes_ {};
+  std::vector<bool> used_flags_{};
+  std::vector<uint8_t> edges_{};
+  std::vector<id_type> heads_{};
+  std::vector<Suffix> suffixes_{};
 
-  size_t max_length_ {};
+  size_t max_length_{};
 
   TrieBuilder(const std::vector<Key>& keys, id_type width_L1, bool binary_mode);
   ~TrieBuilder() = default;

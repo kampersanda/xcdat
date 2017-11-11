@@ -234,13 +234,13 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag,
   }
 }
 
-id_type BitVector::rank(size_t i) const {
+id_type BitVector::rank(id_type i) const {
   auto& hint = rank_tips_[i / kBitsInR1];
   return hint.L1 + hint.L2[i / kBitsInR2 % kR1PerR2]
          + pop_count(bits_[i / 32] & ((1U << (i % 32)) - 1));
 }
 
-id_type BitVector::select(size_t i) const {
+id_type BitVector::select(id_type i) const {
   id_type left = 0, right = static_cast<id_type>(rank_tips_.size());
 
   if (!select_tips_.is_empty()) {

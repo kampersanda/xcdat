@@ -44,7 +44,7 @@ set(HEADER_FILES
   src/Vector.hpp
   src/xcdat_basics.hpp
   src/xcdat_config.hpp
-  )
+  src/xcdat.hpp)
 
 set(SOURCE_FILES
   src/BitVector.cpp
@@ -61,7 +61,7 @@ set_target_properties(xcdat-exe PROPERTIES OUTPUT_NAME xcdat)
 target_link_libraries(xcdat-exe xcdat)
 
 enable_testing()
-file(GLOB TEST_SOURCES src/test*.cpp)
+file(GLOB TEST_SOURCES src/*_test.cpp)
 foreach(TEST_SOURCE ${TEST_SOURCES})
   get_filename_component(TEST_SOURCE_NAME ${TEST_SOURCE} NAME_WE)
   add_executable(${TEST_SOURCE_NAME} ${TEST_SOURCE})

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <random>
 
-#include "TrieBuilder.hpp"
+#include "xcdat.hpp"
 
 using namespace xcdat;
 
@@ -143,8 +143,8 @@ int query(std::vector<std::string>& args) {
   }
 
   std::string query;
-  std::vector<id_type> ids;
-  std::vector<uint8_t> buf;
+//  std::vector<id_type> ids;
+//  std::vector<uint8_t> buf;
 
   while (true){
     putchar('>');
@@ -165,29 +165,47 @@ int query(std::vector<std::string>& args) {
     }
 
     std::cout << "common_prefix_lookup()" << std::endl;
-    ids.clear();
-    trie.common_prefix_lookup(key, length, ids);
-    std::cout << ids.size() << " found" << std::endl;
+    {
+      size_t N = 0;
+      auto it = trie.make_prefix_iterator(key, length);
+      while (N < limit && it.next()) {
+        std::cout << it.id() << '\t';
+        std::cout.write(reinterpret_cast<const char*>(it.key().first), it.key().second);
+        std::cout << std::endl;
+        ++N;
+      }
 
-    for (size_t i = 0; i < std::min(ids.size(), limit); ++i) {
-      buf.clear();
-      trie.access(ids[i], buf);
-      std::cout << ids[i] << '\t';
-      std::cout.write(reinterpret_cast<const char*>(buf.data()), buf.size());
-      std::cout << std::endl;
+      size_t M = 0;
+      while (it.next()) {
+        ++M;
+      }
+
+      if (M != 0) {
+        std::cout << "and more..." << std::endl;
+      }
+      std::cout << N + M << " found" << std::endl;
     }
 
     std::cout << "predictive_lookup()" << std::endl;
-    ids.clear();
-    trie.predictive_lookup(key, length, ids);
-    std::cout << ids.size() << " found" << std::endl;
+    {
+      size_t N = 0;
+      auto it = trie.make_predictive_iterator(key, length);
+      while (N < limit && it.next()) {
+        std::cout << it.id() << '\t';
+        std::cout.write(reinterpret_cast<const char*>(it.key().first), it.key().second);
+        std::cout << std::endl;
+        ++N;
+      }
 
-    for (size_t i = 0; i < std::min(ids.size(), limit); ++i) {
-      buf.clear();
-      trie.access(ids[i], buf);
-      std::cout << ids[i] << '\t';
-      std::cout.write(reinterpret_cast<const char*>(buf.data()), buf.size());
-      std::cout << std::endl;
+      size_t M = 0;
+      while (it.next()) {
+        ++M;
+      }
+
+      if (M != 0) {
+        std::cout << "and more..." << std::endl;
+      }
+      std::cout << N + M << " found" << std::endl;
     }
   }
 

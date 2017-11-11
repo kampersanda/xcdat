@@ -6,7 +6,7 @@
 #include <random>
 #include <cstring>
 
-#include "TrieBuilder.hpp"
+#include "xcdat.hpp"
 
 using namespace xcdat;
 
@@ -75,7 +75,7 @@ void test_basic_operations(const Trie<Fast>& trie, const std::vector<Key>& keys,
 
   for (auto& key : keys) {
     const auto id = trie.lookup(key.ptr, key.length);
-    assert(id != NOT_FOUND);
+    assert(id != kNotFound);
 
     std::vector<uint8_t> ret;
     trie.access(id, ret);
@@ -86,7 +86,7 @@ void test_basic_operations(const Trie<Fast>& trie, const std::vector<Key>& keys,
 
   for (auto& other : others) {
     const auto id = trie.lookup(other.ptr, other.length);
-    assert(id == NOT_FOUND);
+    assert(id == kNotFound);
   }
 }
 
@@ -96,44 +96,48 @@ void test_prefix_operations(const Trie<Fast>& trie, const std::vector<Key>& keys
   std::cerr << "Prefix operations -> common_prefix_lookup()" << std::endl;
 
   for (auto& key : keys) {
-    std::vector<id_type> ids;
-    auto num_ids = trie.common_prefix_lookup(key.ptr, key.length, ids);
+    size_t num_results = 0;
 
-    assert(1 <= num_ids);
-    assert(num_ids <= kMaxLength);
-    assert(num_ids == ids.size());
+    auto it = trie.make_prefix_iterator(key.ptr, key.length);
+    while (it.next()) {
+      auto id = it.id();
+      auto dec = it.key();
 
-    for (auto id : ids) {
-      std::vector<uint8_t> ret;
-      trie.access(id, ret);
-      assert(ret.size() <= key.length);
+      assert(dec.second <= key.length);
+
+      std::vector<uint8_t> dec2;
+      trie.access(id, dec2);
+
+      assert(dec.second == dec2.size());
+      assert(std::memcmp(dec.first, dec2.data(), dec.second) == 0);
+
+      ++num_results;
     }
 
-    auto limit = num_ids / 2;
-    auto new_num_ids = trie.common_prefix_lookup(key.ptr, key.length, ids, limit);
-
-    assert(new_num_ids == limit);
-    assert(num_ids + new_num_ids == ids.size());
+    assert(1 <= num_results);
+    assert(num_results <= key.length);
   }
 
   for (auto& other : others) {
-    std::vector<id_type> ids;
-    auto num_ids = trie.common_prefix_lookup(other.ptr, other.length, ids);
+    size_t num_results = 0;
 
-    assert(num_ids <= kMaxLength);
-    assert(num_ids == ids.size());
+    auto it = trie.make_prefix_iterator(other.ptr, other.length);
+    while (it.next()) {
+      auto id = it.id();
+      auto dec = it.key();
 
-    for (auto id : ids) {
-      std::vector<uint8_t> ret;
-      trie.access(id, ret);
-      assert(ret.size() < other.length);
+      assert(dec.second < other.length);
+
+      std::vector<uint8_t> dec2;
+      trie.access(id, dec2);
+
+      assert(dec.second == dec2.size());
+      assert(std::memcmp(dec.first, dec2.data(), dec.second) == 0);
+
+      ++num_results;
     }
 
-    auto limit = num_ids / 2;
-    auto new_num_ids = trie.common_prefix_lookup(other.ptr, other.length, ids, limit);
-
-    assert(new_num_ids == limit);
-    assert(num_ids + new_num_ids == ids.size());
+    assert(num_results < other.length);
   }
 }
 
@@ -143,42 +147,63 @@ void test_predictive_operations(const Trie<Fast>& trie, const std::vector<Key>& 
   std::cerr << "Predictive operations -> predictive_lookup()" << std::endl;
 
   for (auto& key : keys) {
-    std::vector<id_type> ids;
-    auto num_ids = trie.predictive_lookup(key.ptr, key.length, ids);
+    size_t num_results = 0;
 
-    assert(1 <= num_ids);
-    assert(num_ids == ids.size());
+    auto it = trie.make_predictive_iterator(key.ptr, key.length);
+    while (it.next()) {
+      auto id = it.id();
+      auto dec = it.key();
 
-    for (auto id : ids) {
-      std::vector<uint8_t> ret;
-      trie.access(id, ret);
-      assert(key.length <= ret.size());
+      assert(key.length <= dec.second);
+
+      std::vector<uint8_t> dec2;
+      trie.access(id, dec2);
+
+      assert(dec.second == dec2.size());
+      assert(std::memcmp(dec.first, dec2.data(), dec.second) == 0);
+
+      ++num_results;
     }
 
-    auto limit = num_ids / 2;
-    auto new_num_ids = trie.predictive_lookup(key.ptr, key.length, ids, limit);
-
-    assert(new_num_ids == limit);
-    assert(num_ids + new_num_ids == ids.size());
+    assert(1 <= num_results);
   }
 
   for (auto& other : others) {
-    std::vector<id_type> ids;
-    auto num_ids = trie.predictive_lookup(other.ptr, other.length, ids);
+    auto it = trie.make_predictive_iterator(other.ptr, other.length);
+    while (it.next()) {
+      auto id = it.id();
+      auto dec = it.key();
 
-    assert(num_ids == ids.size());
+      assert(other.length < dec.second);
 
-    for (auto id : ids) {
-      std::vector<uint8_t> ret;
-      trie.access(id, ret);
-      assert(other.length < ret.size());
+      std::vector<uint8_t> dec2;
+      trie.access(id, dec2);
+
+      assert(dec.second == dec2.size());
+      assert(std::memcmp(dec.first, dec2.data(), dec.second) == 0);
+    }
+  }
+
+  { // all enumeration
+    size_t num_results = 0;
+
+    auto it = trie.make_predictive_iterator(nullptr, 0);
+    while (it.next()) {
+      auto id = it.id();
+      auto dec = it.key();
+
+      assert(0 <= dec.second);
+
+      std::vector<uint8_t> dec2;
+      trie.access(id, dec2);
+
+      assert(dec.second == dec2.size());
+      assert(std::memcmp(dec.first, dec2.data(), dec.second) == 0);
+
+      ++num_results;
     }
 
-    auto limit = num_ids / 2;
-    auto new_num_ids = trie.predictive_lookup(other.ptr, other.length, ids, limit);
-
-    assert(new_num_ids == limit);
-    assert(num_ids + new_num_ids == ids.size());
+    assert(num_results == trie.num_keys());
   }
 }
 

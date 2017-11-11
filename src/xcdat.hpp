@@ -5,4 +5,13 @@
 #ifndef XCDAT_XCDAT_HPP
 #define XCDAT_XCDAT_HPP
 
+#include "TrieBuilder.hpp"
+
+namespace xcdat {
+
+
+
+}
+
+
 #endif //XCDAT_XCDAT_HPP
