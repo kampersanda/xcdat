@@ -75,7 +75,7 @@ void test_basic_operations(const Trie<Fast>& trie, const std::vector<Key>& keys,
 
   for (auto& key : keys) {
     const auto id = trie.lookup(key.ptr, key.length);
-    assert(id != kNotFound);
+    assert(id != NOT_FOUND);
 
     std::vector<uint8_t> ret;
     trie.access(id, ret);
@@ -86,7 +86,7 @@ void test_basic_operations(const Trie<Fast>& trie, const std::vector<Key>& keys,
 
   for (auto& other : others) {
     const auto id = trie.lookup(other.ptr, other.length);
-    assert(id == kNotFound);
+    assert(id == NOT_FOUND);
   }
 }
 
