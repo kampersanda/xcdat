@@ -37,12 +37,9 @@ file(GLOB HEADER_FILES include/xcdat/*.hpp)
 file(GLOB SOURCE_FILES lib/*.cpp)
 
 include_directories(include)
-
 add_library(xcdat STATIC ${HEADER_FILES} ${SOURCE_FILES})
 
-add_executable(xcdat-exe tool/xcdat.cpp)
-set_target_properties(xcdat-exe PROPERTIES OUTPUT_NAME xcdat)
-target_link_libraries(xcdat-exe xcdat)
+add_subdirectory(tool)
 
 enable_testing()
 add_subdirectory(test)
@@ -50,4 +47,3 @@ add_subdirectory(test)
 install(FILES include/xcdat.hpp DESTINATION include)
 install(FILES ${HEADER_FILES} DESTINATION include/xcdat)
 install(TARGETS xcdat ARCHIVE DESTINATION lib)
-install(TARGETS xcdat-exe RUNTIME DESTINATION bin)
