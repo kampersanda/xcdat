@@ -1,6 +1,6 @@
 #include <sstream>
 
-#include "DacBc.hpp"
+#include "xcdat/DacBc.hpp"
 
 namespace xcdat {
 

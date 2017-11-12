@@ -1,16 +1,17 @@
 #include <iostream>
-#include "TrieBuilder.hpp"
+
+#include "xcdat/TrieBuilder.hpp"
 
 namespace xcdat {
 
-TrieBuilder::TrieBuilder(const std::vector<Key>& keys,
-                         id_type width_L1, bool binary_mode)
+TrieBuilder::TrieBuilder(const std::vector<std::string_view>& keys,
+                         id_type width_L1, bool bin_mode)
   : keys_(keys), block_size_(1U << width_L1), width_L1_(width_L1),
-    binary_mode_(binary_mode) {
+    bin_mode_(bin_mode) {
   if (keys_.empty()) {
     throw TrieBuilder::Exception("The input data is empty.");
   }
-  if (kIdMax < keys_.size()) {
+  if (ID_MAX < keys_.size()) {
     throw TrieBuilder::Exception("Key ID range error.");
   }
 
@@ -46,9 +47,9 @@ TrieBuilder::TrieBuilder(const std::vector<Key>& keys,
   }
 
   use_(0);
-  bc_[0].check = kTabooId;
-  used_flags_[kTabooId] = true;
-  heads_[kTabooId >> width_L1_] = bc_[kTabooId].base;
+  bc_[0].check = TABOO_ID;
+  used_flags_[TABOO_ID] = true;
+  heads_[TABOO_ID >> width_L1_] = bc_[TABOO_ID].base;
 
   build_table_();
   build_bc_(0, keys_.size(), 0, 0);
@@ -64,15 +65,15 @@ void TrieBuilder::build_table_() {
   }
 
   max_length_ = 0;
-  for (size_t i = 0; i < keys_.size(); ++i) {
-    for (size_t j = 0; j < keys_[i].length; ++j) {
-      ++table_builder[keys_[i].ptr[j]].second;
+  for (auto& key : keys_) {
+    for (char c : key) {
+      ++table_builder[static_cast<uint8_t>(c)].second;
     }
-    max_length_ = std::max(max_length_, keys_[i].length);
+    max_length_ = std::max(max_length_, key.length());
   }
 
-  if (table_builder[0].second) { // including '\0'
-    binary_mode_ = true;
+  if (table_builder[0].second != 0) { // including '\0'
+    bin_mode_ = true;
   }
 
   for (const auto& item : table_builder) {
@@ -98,7 +99,7 @@ void TrieBuilder::build_table_() {
 
 void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth,
                             id_type node_id) {
-  if (keys_[begin].length == depth) {
+  if (keys_[begin].length() == depth) {
     term_flags_.set_bit(node_id, true);
     if (++begin == end) { // without link?
       bc_[node_id].base = 0; // with an empty suffix
@@ -109,15 +110,17 @@ void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth,
     term_flags_.set_bit(node_id, true);
     leaf_flags_.set_bit(node_id, true);
     auto& key = keys_[begin];
-    suffixes_.push_back({{key.ptr + depth, key.length - depth}, node_id});
+    suffixes_.push_back(
+      {{key.data() + depth, key.length() - depth}, node_id}
+    );
     return;
   }
 
   { // fetching edges
     edges_.clear();
-    auto label = keys_[begin].ptr[depth];
+    auto label = static_cast<uint8_t>(keys_[begin][depth]);
     for (auto str_id = begin + 1; str_id < end; ++str_id) {
-      const auto _label = keys_[str_id].ptr[depth];
+      const auto _label = static_cast<uint8_t>(keys_[str_id][depth]);
       if (label != _label) {
         if (_label < label) {
           throw TrieBuilder::Exception(
@@ -146,9 +149,9 @@ void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth,
 
   // following the children
   auto _begin = begin;
-  auto label = keys_[begin].ptr[depth];
+  auto label = static_cast<uint8_t>(keys_[begin][depth]);
   for (auto _end = begin + 1; _end < end; ++_end) {
-    const auto _label = keys_[_end].ptr[depth];
+    const auto _label = static_cast<uint8_t>(keys_[_end][depth]);
     if (label != _label) {
       build_bc_(_begin, _end, depth + 1, base ^ table_[label]);
       label = _label;
@@ -162,59 +165,58 @@ void TrieBuilder::build_bc_(size_t begin, size_t end, size_t depth,
 void TrieBuilder::build_tail_() {
   std::sort(std::begin(suffixes_), std::end(suffixes_),
             [](const Suffix& lhs, const Suffix& rhs) {
-              return std::lexicographical_compare(lhs.rbegin(), lhs.rend(),
-                                                  rhs.rbegin(), rhs.rend());
+              return std::lexicographical_compare(
+                std::rbegin(lhs), std::rend(lhs),
+                std::rbegin(rhs), std::rend(rhs));
             });
 
   // For empty suffixes
   tail_.emplace_back('\0');
-  if (binary_mode_) {
+  if (bin_mode_) {
     boundary_flags_.push_back(false);
   }
 
   const Suffix dummy = {{nullptr, 0}, 0};
-  const Suffix* prev = &dummy;
+  const Suffix* prev_suf = &dummy;
 
   for (size_t i = suffixes_.size(); i > 0; --i) {
-    const Suffix& cur = suffixes_[i - 1];
-    if (cur.length() == 0) {
+    const auto& cur_suf = suffixes_[i - 1];
+    if (cur_suf.length() == 0) {
       throw TrieBuilder::Exception("A suffix is empty.");
     }
 
     size_t match = 0;
-    while ((match < cur.length()) && (match < prev->length())
-           && ((*prev)[match] == cur[match])) {
+    while ((match < cur_suf.length()) && (match < prev_suf->length())
+           && ((*prev_suf)[match] == cur_suf[match])) {
       ++match;
     }
 
-    if ((match == cur.length()) && (prev->length() != 0)) { // sharing
-      bc_[cur.node_id].base =
-        static_cast<id_type>(
-          bc_[prev->node_id].base + (prev->length() - match)
-        );
+    if ((match == cur_suf.length()) && (prev_suf->length() != 0)) { // sharing
+      bc_[cur_suf.node_id].base = static_cast<id_type>(
+        bc_[prev_suf->node_id].base + (prev_suf->length() - match)
+      );
     } else { // append
-      bc_[cur.node_id].base = static_cast<id_type>(tail_.size());
-      for (size_t j = 0; j < cur.length(); ++j) {
-        tail_.push_back(cur.str.ptr[j]);
-      }
-      if (binary_mode_) {
-        for (size_t j = 1; j < cur.length(); ++j) {
+      bc_[cur_suf.node_id].base = static_cast<id_type>(tail_.size());
+      std::copy(std::begin(cur_suf.str), std::end(cur_suf.str),
+                std::back_inserter(tail_));
+      if (bin_mode_) {
+        for (size_t j = 1; j < cur_suf.length(); ++j) {
           boundary_flags_.push_back(false);
         }
         boundary_flags_.push_back(true);
       } else {
         tail_.emplace_back('\0');
       }
-      if (kIdMax < tail_.size()) {
+      if (ID_MAX < tail_.size()) {
         throw TrieBuilder::Exception("TAIL address range error.");
       }
     }
-    prev = &cur;
+    prev_suf = &cur_suf;
   }
 }
 
 void TrieBuilder::expand_() {
-  if (kIdMax < bc_.size() + 256) {
+  if (ID_MAX < bc_.size() + 256) {
     throw TrieBuilder::Exception("Node ID range error.");
   }
 
@@ -229,11 +231,11 @@ void TrieBuilder::expand_() {
   }
 
   {
-    const auto last = bc_[kTabooId].check;
+    const auto last = bc_[TABOO_ID].check;
     bc_[old_size].check = last;
     bc_[last].base = old_size;
-    bc_[new_size - 1].base = kTabooId;
-    bc_[kTabooId].check = new_size - 1;
+    bc_[new_size - 1].base = TABOO_ID;
+    bc_[TABOO_ID].check = new_size - 1;
   }
 
   for (auto i = old_size; i < new_size; i += block_size_) {
@@ -241,8 +243,8 @@ void TrieBuilder::expand_() {
   }
 
   const auto block_id = old_size / 256;
-  if (kFreeBlocks <= block_id) {
-    close_block_(block_id - kFreeBlocks);
+  if (FREE_BLOCKS <= block_id) {
+    close_block_(block_id - FREE_BLOCKS);
   }
 }
 
@@ -256,7 +258,7 @@ void TrieBuilder::use_(id_type node_id) {
 
   const auto block_id = node_id >> width_L1_;
   if (heads_[block_id] == node_id) {
-    heads_[block_id] = (block_id != next >> width_L1_) ? kTabooId : next;
+    heads_[block_id] = (block_id != next >> width_L1_) ? TABOO_ID : next;
   }
 }
 
@@ -274,17 +276,18 @@ void TrieBuilder::close_block_(id_type block_id) {
   }
 
   for (auto i = begin; i < end; i += block_size_) {
-    heads_[i >> width_L1_] = kTabooId;
+    heads_[i >> width_L1_] = TABOO_ID;
   }
 }
 
 id_type TrieBuilder::find_base_(id_type block_id) const {
-  if (bc_[kTabooId].base == kTabooId) { // Full?
+  if (bc_[TABOO_ID].base == TABOO_ID) { // Full?
     return static_cast<id_type>(bc_.size()) ^ table_[edges_[0]];
   }
 
   // search in the same block
-  for (auto i = heads_[block_id]; i != kTabooId && i >> width_L1_ == block_id;
+  for (auto i = heads_[block_id];
+       i != TABOO_ID && i >> width_L1_ == block_id;
        i = bc_[i].base) {
     const auto base = i ^ table_[edges_[0]];
     if (is_target_(base)) {
@@ -292,7 +295,7 @@ id_type TrieBuilder::find_base_(id_type block_id) const {
     }
   }
 
-  for (auto i = bc_[kTabooId].base; i != kTabooId; i = bc_[i].base) {
+  for (auto i = bc_[TABOO_ID].base; i != TABOO_ID; i = bc_[i].base) {
     const auto base = i ^ table_[edges_[0]];
     if (is_target_(base)) {
       return base; // base / block_size_ != block_id

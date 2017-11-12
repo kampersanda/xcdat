@@ -8,37 +8,32 @@ namespace xcdat {
 // Double-array trie builder.
 class TrieBuilder {
 public:
-  // for avoiding undefined traversal
-  static constexpr id_type kTabooId = 1;
-  // inspired by darts-clone
-  static constexpr id_type kFreeBlocks = 16;
-
-  struct Key {
-    const uint8_t* ptr;
-    size_t length;
-  };
+  // To avoid undefined traversal
+  static constexpr id_type TABOO_ID = 1;
+  // From darts-clone setting
+  static constexpr id_type FREE_BLOCKS = 16;
 
   // Builds the dictionary from given string keys. The keys must be sorted in
   // lexicographical order without duplication. Any error in construction is
   // reported by TrieBuilder::Exception. If the keys include the ASCII zero
-  // code, pass binary_mode = true.
+  // code, pass bin_mode = true.
   template<bool Fast>
   static Trie<Fast>
-  build(const std::vector<Key>& keys, bool binary_mode = false) {
-    TrieBuilder builder(keys, Trie<Fast>::bc_type::kWidthL1, binary_mode);
+  build(const std::vector<std::string_view>& keys, bool bin_mode = false) {
+    TrieBuilder builder(keys, Trie<Fast>::bc_type::WIDTH_L1, bin_mode);
 
     Trie<Fast> trie;
 
     trie.bc_ = typename Trie<Fast>::bc_type(builder.bc_, builder.leaf_flags_);
     trie.terminal_flags_ = BitVector(builder.term_flags_, true, true);
-    trie.tail_ = Vector<uint8_t>(builder.tail_);
+    trie.tail_ = Vector<char>(builder.tail_);
     trie.boundary_flags_ = BitVector(builder.boundary_flags_, false, false);
     trie.alphabet_ = Vector<uint8_t>(builder.alphabet_);
     std::swap(trie.table_, builder.table_);
 
     trie.num_keys_ = keys.size();
     trie.max_length_ = builder.max_length_;
-    trie.binary_mode_ = builder.binary_mode_;
+    trie.bin_mode_ = builder.bin_mode_;
 
     return trie;
   }
@@ -47,7 +42,7 @@ public:
   class Exception : public std::exception {
   public:
     explicit Exception(std::string message) : message_(std::move(message)) {}
-    ~Exception() throw() override {}
+    ~Exception() throw() override {};
 
     // overrides what() of std::exception.
     const char* what() const throw() override {
@@ -63,34 +58,34 @@ public:
 
 private:
   struct Suffix {
-    Key str;
+    std::string_view str;
     id_type node_id;
 
     size_t length() const {
-      return str.length;
+      return str.length();
     }
-    uint8_t operator[](size_t i) const {
-      return str.ptr[length() - i - 1];
+    char operator[](size_t i) const {
+      return str[length() - i - 1];
     }
 
-    std::reverse_iterator<const uint8_t*> rbegin() const {
-      return std::reverse_iterator<const uint8_t*>(str.ptr + str.length);
+    std::reverse_iterator<const char*> rbegin() const {
+      return std::make_reverse_iterator(str.data() + str.length());
     }
-    std::reverse_iterator<const uint8_t*> rend() const {
-      return std::reverse_iterator<const uint8_t*>(str.ptr);
+    std::reverse_iterator<const char*> rend() const {
+      return std::make_reverse_iterator(str.data());
     }
   };
 
-  const std::vector<Key>& keys_;
+  const std::vector<std::string_view>& keys_;
   const id_type block_size_;
   const id_type width_L1_;
 
-  bool binary_mode_{};
+  bool bin_mode_{};
 
   std::vector<BcPair> bc_{};
   BitVectorBuilder leaf_flags_{};
   BitVectorBuilder term_flags_{};
-  std::vector<uint8_t> tail_{};
+  std::vector<char> tail_{};
   BitVectorBuilder boundary_flags_{};
   std::vector<uint8_t> alphabet_{};
   uint8_t table_[512]{};
@@ -102,7 +97,8 @@ private:
 
   size_t max_length_{};
 
-  TrieBuilder(const std::vector<Key>& keys, id_type width_L1, bool binary_mode);
+  TrieBuilder(const std::vector<std::string_view>& keys,
+              id_type width_L1, bool bin_mode);
   ~TrieBuilder() = default;
 
   void build_table_();

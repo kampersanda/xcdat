@@ -5,7 +5,7 @@
 #ifndef XCDAT_XCDAT_HPP
 #define XCDAT_XCDAT_HPP
 
-#include "TrieBuilder.hpp"
+#include "xcdat/TrieBuilder.hpp"
 
 namespace xcdat {
 

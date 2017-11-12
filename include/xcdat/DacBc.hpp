@@ -9,7 +9,7 @@ namespace xcdat {
 // BASE/CHECK representation using byte-oriented DACs.
 class DacBc {
 public:
-  static constexpr id_type kWidthL1 {8};
+  static constexpr id_type WIDTH_L1 {8};
 
   DacBc() = default;
   ~DacBc() = default;
@@ -48,6 +48,10 @@ public:
   void show_stat(std::ostream &os) const;
 
   void write(std::ostream &os) const;
+
+  void swap(DacBc& rhs) {
+    std::swap(*this, rhs);
+  }
 
   DacBc(const DacBc&) = delete;
   DacBc& operator=(const DacBc&) = delete;

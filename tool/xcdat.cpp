@@ -8,9 +8,7 @@ using namespace xcdat;
 
 namespace {
 
-constexpr uint32_t kRuns = 10;
-
-using Key = TrieBuilder::Key;
+constexpr int RUNS = 10;
 
 class StopWatch {
 public:
@@ -36,29 +34,27 @@ private:
 };
 
 size_t read_keys(const char* file_name, std::vector<std::string>& keys) {
-  std::ifstream ifs(file_name);
+  std::ifstream ifs{file_name};
   if (!ifs) {
     return 0;
   }
 
   size_t size = 0;
-  std::string line;
-
-  while (std::getline(ifs, line)) {
-    if (!line.empty()) {
-      keys.emplace_back(line);
-      size += line.length() + 1; // with terminator
-    }
+  for (std::string line; std::getline(ifs, line);) {
+    keys.push_back(line);
+    size += line.length() + 1; // with terminator
   }
+
   return size;
 }
 
-void extract_pairs(const std::vector<std::string>& keys, std::vector<Key>& pairs) {
-  pairs.clear();
-  pairs.resize(keys.size());
+std::vector<std::string_view>
+extract_views(const std::vector<std::string>& keys) {
+  std::vector<std::string_view> views(keys.size());
   for (size_t i = 0; i < keys.size(); ++i) {
-    pairs[i] = {reinterpret_cast<const uint8_t*>(keys[i].c_str()), keys[i].length()};
+    views[i] = keys[i];
   }
+  return views;
 };
 
 void show_usage(std::ostream& os) {
@@ -84,16 +80,15 @@ int build(std::vector<std::string>& args) {
     return 1;
   }
 
-  std::vector<std::string> strs;
-  auto raw_size = read_keys(args[2].c_str(), strs);
+  std::vector<std::string> keys_buffer;
+  auto raw_size = read_keys(args[2].c_str(), keys_buffer);
 
   if (raw_size == 0) {
     std::cerr << "open error : " << args[2] << std::endl;
     return 1;
   }
 
-  std::vector<Key> keys;
-  extract_pairs(strs, keys);
+  auto keys = extract_views(keys_buffer);
 
   Trie<Fast> trie;
   try {
@@ -105,11 +100,13 @@ int build(std::vector<std::string>& args) {
     return 1;
   }
 
-  std::cout << "cmpr. ratio: " << (double) trie.size_in_bytes() / raw_size << std::endl;
+  std::cout << "cmpr. ratio: "
+            << static_cast<double>(trie.size_in_bytes()) / raw_size
+            << std::endl;
   trie.show_stat(std::cout);
 
   {
-    std::ofstream ofs(args[3]);
+    std::ofstream ofs{args[3] + (Fast ? ".fdac" : ".dac")};
     if (!ofs) {
       std::cerr << "open error : " << args[3] << std::endl;
       return 1;
@@ -143,35 +140,28 @@ int query(std::vector<std::string>& args) {
   }
 
   std::string query;
-//  std::vector<id_type> ids;
-//  std::vector<uint8_t> buf;
 
   while (true){
-    putchar('>');
+    putchar('> ');
     getline(std::cin, query);
     if (query.empty()){
       break;
     }
 
-    auto key = reinterpret_cast<const uint8_t*>(query.c_str());
-    auto length = query.size();
-
-    std::cout << "lookup()" << std::endl;
-    auto id = trie.lookup(key, length);
-    if (id == kNotFound) {
+    std::cout << "Lookup" << std::endl;
+    auto id = trie.lookup(query);
+    if (id == Trie<Fast>::NOT_FOUND) {
       std::cout << "not found" << std::endl;
     } else {
       std::cout << id << '\t' << query << std::endl;
     }
 
-    std::cout << "common_prefix_lookup()" << std::endl;
+    std::cout << "Common Prefix Lookup" << std::endl;
     {
       size_t N = 0;
-      auto it = trie.make_prefix_iterator(key, length);
+      auto it = trie.make_prefix_iterator(query);
       while (N < limit && it.next()) {
-        std::cout << it.id() << '\t';
-        std::cout.write(reinterpret_cast<const char*>(it.key().first), it.key().second);
-        std::cout << std::endl;
+        std::cout << it.id() << '\t' << it.key() << std::endl;
         ++N;
       }
 
@@ -186,14 +176,12 @@ int query(std::vector<std::string>& args) {
       std::cout << N + M << " found" << std::endl;
     }
 
-    std::cout << "predictive_lookup()" << std::endl;
+    std::cout << "Predictive Lookup" << std::endl;
     {
       size_t N = 0;
-      auto it = trie.make_predictive_iterator(key, length);
+      auto it = trie.make_predictive_iterator(query);
       while (N < limit && it.next()) {
-        std::cout << it.id() << '\t';
-        std::cout.write(reinterpret_cast<const char*>(it.key().first), it.key().second);
-        std::cout << std::endl;
+        std::cout << it.id() << '\t' << it.key() << std::endl;
         ++N;
       }
 
@@ -229,51 +217,52 @@ int bench(std::vector<std::string>& args) {
     trie = Trie<Fast>(ifs);
   }
 
-  std::vector<std::string> strs;
-  if (read_keys(args[3].c_str(), strs) == 0) {
+  std::vector<std::string> keys_buffer;
+  if (read_keys(args[3].c_str(), keys_buffer) == 0) {
     std::cerr << "open error : " << args[3] << std::endl;
     return 1;
   }
 
-  std::vector<Key> keys;
-  extract_pairs(strs, keys);
+  auto keys = extract_views(keys_buffer);
 
   std::vector<id_type> ids(keys.size());
   for (size_t i = 0; i < keys.size(); ++i) {
-    ids[i] = trie.lookup(keys[i].ptr, keys[i].length);
+    ids[i] = trie.lookup(keys[i]);
   }
 
   {
-    std::cout << "Lookup benchmark on " << kRuns << " runs" << std::endl;
+    std::cout << "Lookup benchmark on " << RUNS << " runs" << std::endl;
 
     StopWatch sw;
-    for (uint32_t r = 0; r < kRuns; ++r) {
+    for (uint32_t r = 0; r < RUNS; ++r) {
       for (size_t i = 0; i < keys.size(); ++i) {
-        if (trie.lookup(keys[i].ptr, keys[i].length) == kNotFound) {
-          std::cerr << "Failed to lookup " << strs[i] << std::endl;
+        if (trie.lookup(keys[i]) == Trie<Fast>::NOT_FOUND) {
+          std::cerr << "Failed to lookup " << keys_buffer[i] << std::endl;
           return 1;
         }
       }
     }
 
-    std::cout << sw.micro_sec() / kRuns / keys.size() << " us per str" << std::endl;
+    std::cout << sw.micro_sec() / RUNS / keys.size()
+              << " us per str" << std::endl;
   }
 
   {
-    std::cout << "Access benchmark on " << kRuns << " runs" << std::endl;
+    std::cout << "Access benchmark on " << RUNS << " runs" << std::endl;
 
     StopWatch sw;
-    for (uint32_t r = 0; r < kRuns; ++r) {
-      for (size_t i = 0; i < ids.size(); ++i) {
-        std::vector<uint8_t> key;
-        if (!trie.access(ids[i], key)) {
-          std::cerr << "Failed to access " << ids[i] << std::endl;
+    for (uint32_t r = 0; r < RUNS; ++r) {
+      for (auto id : ids) {
+        auto dec = trie.access(id);
+        if (dec.empty()) {
+          std::cerr << "Failed to access " << id << std::endl;
           return 1;
         }
       }
     }
 
-    std::cout << sw.micro_sec() / kRuns / ids.size() << " us per ID" << std::endl;
+    std::cout << sw.micro_sec() / RUNS / ids.size()
+              << " us per ID" << std::endl;
   }
 
   return 0;

@@ -8,7 +8,7 @@ namespace xcdat {
 // Compacted integer vector.
 class FitVector {
 public:
-  static constexpr id_type kChunkWidth = sizeof(id_type) * 8;
+  static constexpr id_type CHUNK_WIDTH = sizeof(id_type) * 8;
 
   FitVector() = default;
   explicit FitVector(std::istream &is);
@@ -17,20 +17,26 @@ public:
   ~FitVector() = default;
 
   id_type operator[](size_t i) const {
-    auto chunk_pos = static_cast<id_type>(i * width_ / kChunkWidth);
-    auto offset = static_cast<id_type>(i * width_ % kChunkWidth);
-    if (offset + width_ <= kChunkWidth) {
+    auto chunk_pos = static_cast<id_type>(i * width_ / CHUNK_WIDTH);
+    auto offset = static_cast<id_type>(i * width_ % CHUNK_WIDTH);
+    if (offset + width_ <= CHUNK_WIDTH) {
       return (chunks_[chunk_pos] >> offset) & mask_;
     } else {
       return ((chunks_[chunk_pos] >> offset)
-              | (chunks_[chunk_pos + 1] << (kChunkWidth - offset))) & mask_;
+              | (chunks_[chunk_pos + 1] << (CHUNK_WIDTH - offset))) & mask_;
     }
   }
 
-  size_t size() const { return size_; }
+  size_t size() const {
+    return size_;
+  }
   size_t size_in_bytes() const;
 
   void write(std::ostream &os) const;
+
+  void swap(FitVector& rhs) {
+    std::swap(*this, rhs);
+  }
 
   FitVector(const FitVector&) = delete;
   FitVector& operator=(const FitVector&) = delete;

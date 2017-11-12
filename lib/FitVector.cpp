@@ -1,4 +1,4 @@
-#include "FitVector.hpp"
+#include "xcdat/FitVector.hpp"
 
 namespace xcdat {
 
@@ -23,18 +23,18 @@ FitVector::FitVector(const std::vector<id_type>& values) {
 
   size_ = values.size();
   mask_ = (1U << width_) - 1;
-  std::vector<id_type> chunks(size_ * width_ / kChunkWidth + 1, 0);
+  std::vector<id_type> chunks(size_ * width_ / CHUNK_WIDTH + 1, 0);
 
   for (id_type i = 0; i < size_; ++i) {
-    const auto chunk_pos = static_cast<id_type>(i * width_ / kChunkWidth);
-    const auto offset = static_cast<id_type>(i * width_ % kChunkWidth);
+    const auto chunk_pos = static_cast<id_type>(i * width_ / CHUNK_WIDTH);
+    const auto offset = static_cast<id_type>(i * width_ % CHUNK_WIDTH);
 
     chunks[chunk_pos] &= ~(mask_ << offset);
     chunks[chunk_pos] |= (values[i] & mask_) << offset;
 
-    if (kChunkWidth < offset + width_) {
-      chunks[chunk_pos + 1] &= ~(mask_ >> (kChunkWidth - offset));
-      chunks[chunk_pos + 1] |= (values[i] & mask_) >> (kChunkWidth - offset);
+    if (CHUNK_WIDTH < offset + width_) {
+      chunks[chunk_pos + 1] &= ~(mask_ >> (CHUNK_WIDTH - offset));
+      chunks[chunk_pos + 1] |= (values[i] & mask_) >> (CHUNK_WIDTH - offset);
     }
   }
 

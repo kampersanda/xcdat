@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <limits>
 
 #include "xcdat_config.hpp"
 
@@ -21,7 +22,7 @@ using id_type = uint64_t;
 using id_type = uint32_t;
 #endif
 
-constexpr id_type kIdMax = std::numeric_limits<id_type>::max();
+constexpr id_type ID_MAX = std::numeric_limits<id_type>::max();
 
 struct BcPair {
   id_type base;

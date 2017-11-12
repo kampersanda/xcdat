@@ -12,17 +12,17 @@ namespace xcdat {
 // BASE/CHECK representation using pointer-based byte-oriented DACs.
 class FastDacBc {
 public:
-  static constexpr id_type kWidthL1 = 7;
+  static constexpr id_type WIDTH_L1 = 7;
 #ifdef XCDAT_X64
-  static constexpr uint8_t kLayers = 4;
+  static constexpr uint8_t LAYERS = 4;
 #else
-  static constexpr uint8_t kLayers = 3;
+  static constexpr uint8_t LAYERS = 3;
 #endif
 
-  static constexpr id_type kBlockLenL1 = 1U << 7;
-  static constexpr id_type kBlockLenL2 = 1U << 15;
+  static constexpr id_type BLOCK_SIZE_L1 = 1U << 7;
+  static constexpr id_type BLOCK_SIZE_L2 = 1U << 15;
 #ifdef XCDAT_X64
-  static constexpr id_type kBlockLenL3 = 1U << 31;
+  static constexpr id_type BLOCK_SIZE_L3 = 1U << 31;
 #endif
 
   FastDacBc() = default;
@@ -63,6 +63,10 @@ public:
   void show_stat(std::ostream& os) const;
   void write(std::ostream& os) const;
 
+  void swap(FastDacBc& rhs) {
+    std::swap(*this, rhs);
+  }
+
   FastDacBc(const FastDacBc&) = delete;
   FastDacBc& operator=(const FastDacBc&) = delete;
 
@@ -76,7 +80,7 @@ private:
 #ifdef XCDAT_X64
   Vector<uint64_t> values_L4_ {};
 #endif
-  Vector <id_type> ranks_[kLayers - 1]{};
+  Vector <id_type> ranks_[LAYERS - 1]{};
   BitVector leaf_flags_{};
   FitVector links_{};
   size_t num_free_nodes_{};

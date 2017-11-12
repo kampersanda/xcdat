@@ -1,11 +1,11 @@
 #include <popcntintrin.h>
 
-#include "BitVector.hpp"
+#include "xcdat/BitVector.hpp"
 
 namespace xcdat {
 
 // inspired by marisa-trie
-constexpr uint8_t kSelectTable[9][256] = {
+constexpr uint8_t SELECT_TABLE[9][256] = {
   {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -170,16 +170,16 @@ constexpr uint8_t kSelectTable[9][256] = {
   }
 };
 
-uint32_t pop_count(uint32_t bits) {
+uint32_t pop_count(uint32_t x) {
 #ifdef XCDAT_USE_POPCNT
-  return static_cast<uint32_t>(_mm_popcnt_u32(bits));
+  return static_cast<uint32_t>(_mm_popcnt_u32(x));
 #else
-  bits = ((bits & 0xAAAAAAAA) >> 1) + (bits & 0x55555555);
-  bits = ((bits & 0xCCCCCCCC) >> 2) + (bits & 0x33333333);
-  bits = ((bits >> 4) + bits) & 0x0F0F0F0F;
-  bits += bits >> 8;
-  bits += bits >> 16;
-  return bits & 0x3F;
+  x = ((x & 0xAAAAAAAA) >> 1) + (x & 0x55555555);
+  x = ((x & 0xCCCCCCCC) >> 2) + (x & 0x33333333);
+  x = ((x >> 4) + x) & 0x0F0F0F0F;
+  x += x >> 8;
+  x += x >> 16;
+  return x & 0x3F;
 #endif
 }
 
@@ -203,14 +203,14 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag,
 
   // builds rank_tips_
   if (rank_flag) {
-    std::vector<RankTip> rank_tips(size_ / kBitsInR1 + 1);
+    std::vector<RankTip> rank_tips(size_ / BITS_IN_R1 + 1);
     id_type count = 0;
     for (id_type i = 0; i < rank_tips.size(); ++i) {
       auto& tip = rank_tips[i];
       tip.L1 = count;
-      for (id_type offset = 0; offset < kR1PerR2; ++offset) {
+      for (id_type offset = 0; offset < R1_PER_R2; ++offset) {
         tip.L2[offset] = static_cast<uint8_t>(count - tip.L1);
-        auto pos_in_bits = i * kR1PerR2 + offset;
+        auto pos_in_bits = i * R1_PER_R2 + offset;
         if (pos_in_bits < bits_.size()) {
           count += pop_count(bits_[pos_in_bits]);
         }
@@ -222,11 +222,11 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag,
   // builds select_tips_
   if (rank_flag && select_flag) {
     std::vector<id_type> select_tips{0};
-    auto count = kNum1sPerTip;
+    auto count = ONES_PER_TIP;
     for (id_type i = 0; i < rank_tips_.size(); ++i) {
       if (count < rank_tips_[i].L1) {
         select_tips.push_back(i - 1);
-        count += kNum1sPerTip;
+        count += ONES_PER_TIP;
       }
     }
     select_tips.push_back(static_cast<id_type>(rank_tips_.size() - 1));
@@ -235,8 +235,8 @@ BitVector::BitVector(BitVectorBuilder& builder, bool rank_flag,
 }
 
 id_type BitVector::rank(id_type i) const {
-  auto& hint = rank_tips_[i / kBitsInR1];
-  return hint.L1 + hint.L2[i / kBitsInR2 % kR1PerR2]
+  auto& hint = rank_tips_[i / BITS_IN_R1];
+  return hint.L1 + hint.L2[i / BITS_IN_R2 % R1_PER_R2]
          + pop_count(bits_[i / 32] & ((1U << (i % 32)) - 1));
 }
 
@@ -244,7 +244,7 @@ id_type BitVector::select(id_type i) const {
   id_type left = 0, right = static_cast<id_type>(rank_tips_.size());
 
   if (!select_tips_.is_empty()) {
-    auto select_tip_id = static_cast<id_type>(i / kNum1sPerTip);
+    auto select_tip_id = static_cast<id_type>(i / ONES_PER_TIP);
     left = select_tips_[select_tip_id];
     right = select_tips_[select_tip_id + 1] + 1;
   }
@@ -262,14 +262,14 @@ id_type BitVector::select(id_type i) const {
   i -= rank_tips_[left].L1;
 
   uint32_t offset = 1;
-  for (; offset < kR1PerR2; ++offset) {
+  for (; offset < R1_PER_R2; ++offset) {
     if (i <= rank_tips_[left].L2[offset]) {
       break;
     }
   }
   i -= rank_tips_[left].L2[--offset];
 
-  auto ret = (left * kBitsInR1) + (offset * kBitsInR2);
+  auto ret = (left * BITS_IN_R1) + (offset * BITS_IN_R2);
   auto bits = bits_[ret / 32];
 
   {
@@ -289,7 +289,7 @@ id_type BitVector::select(id_type i) const {
     }
   }
 
-  ret += kSelectTable[i][bits % 256];
+  ret += SELECT_TABLE[i][bits % 256];
   return ret - 1;
 }
 

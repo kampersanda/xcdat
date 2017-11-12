@@ -9,7 +9,7 @@
 
 namespace xcdat {
 
-// Simple vector
+// Simple vector of a POD type
 template<typename T>
 class Vector {
 public:
@@ -50,6 +50,13 @@ public:
     return data_ + size_;
   }
 
+  std::reverse_iterator<const T*> rbegin() const {
+    return std::make_reverse_iterator(end());
+  }
+  std::reverse_iterator<const T*> rend() const {
+    return std::make_reverse_iterator(begin());
+  }
+
   bool is_empty() const {
     return size_ == 0;
   }
@@ -65,6 +72,10 @@ public:
   void write(std::ostream& os) const {
     write_value(size_, os);
     os.write(reinterpret_cast<const char*>(data_), sizeof(T) * size_);
+  }
+
+  void swap(Vector& rhs) {
+    std::swap(*this, rhs);
   }
 
   Vector(const Vector&) = delete;

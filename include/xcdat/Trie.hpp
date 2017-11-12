@@ -1,22 +1,24 @@
 #ifndef XCDAT_TRIE_HPP_
 #define XCDAT_TRIE_HPP_
 
-#include <Trie.hpp>
+#include <string_view>
+
+#include "Trie.hpp"
 #include "DacBc.hpp"
 #include "FastDacBc.hpp"
 
 namespace xcdat {
 
-constexpr auto kNotFound = kIdMax;
-
-// Compressed string dictionary using an improved double-array trie.
-// There are two versions of DACs representing BASE/CHECK arrays, selected with
-// the Fast parameter.
+// Compressed string dictionary using an improved double-array trie. There are
+// two versions of DACs representing BASE/CHECK arrays, selected with the Fast
+// parameter.
 template<bool Fast>
 class Trie {
 public:
   using type = Trie<Fast>;
   using bc_type = typename std::conditional<Fast, FastDacBc, DacBc>::type;
+
+  static constexpr auto NOT_FOUND = ID_MAX;
 
   // Generic constructor.
   Trie() = default;
@@ -25,13 +27,13 @@ public:
   explicit Trie(std::istream& is) {
     bc_ = bc_type(is);
     terminal_flags_ = BitVector(is);
-    tail_ = Vector<uint8_t>(is);
+    tail_ = Vector<char>(is);
     boundary_flags_ = BitVector(is);
     alphabet_ = Vector<uint8_t>(is);
     is.read(reinterpret_cast<char*>(table_), 512);
     num_keys_ = read_value<size_t>(is);
     max_length_ = read_value<size_t>(is);
-    binary_mode_ = read_value<bool>(is);
+    bin_mode_ = read_value<bool>(is);
   }
 
   // Generic destructor.
@@ -39,26 +41,26 @@ public:
 
   // Lookups the ID of a given key. If the key is not registered, otherwise
   // returns kNotFound.
-  id_type lookup(const uint8_t* key, size_t length) const {
+  id_type lookup(std::string_view key) const {
     size_t pos = 0;
     id_type node_id = 0;
 
     while (!bc_.is_leaf(node_id)) {
-      if (pos == length) {
-        return terminal_flags_[node_id] ? to_key_id_(node_id) : kNotFound;
+      if (pos == key.length()) {
+        return terminal_flags_[node_id] ? to_key_id_(node_id) : NOT_FOUND;
       }
 
-      const auto child_id = bc_.base(node_id) ^table_[key[pos++]];
+      const auto child_id = bc_.base(node_id) ^code_(key[pos++]);
       if (bc_.check(child_id) != node_id) {
-        return kNotFound;
+        return NOT_FOUND;
       }
 
       node_id = child_id;
     }
 
     size_t tail_pos = bc_.link(node_id);
-    if (!match_suffix_(key, length, pos, tail_pos)) {
-      return kNotFound;
+    if (!match_suffix_(key, pos, tail_pos)) {
+      return NOT_FOUND;
     }
 
     return to_key_id_(node_id);
@@ -66,38 +68,38 @@ public:
 
   // Decodes the key associated with a given ID. The decoded key is appended to
   // 'ret' and its length is returned.
-  size_t access(id_type id, std::vector<uint8_t>& ret) const {
+  std::string access(id_type id) const {
     if (num_keys_ <= id) {
-      return 0;
+      return {};
     }
 
-    auto orig_size = ret.size();
-    ret.reserve(orig_size + max_length_);
+    std::string dec;
+    dec.reserve(max_length_);
 
     auto node_id = to_node_id_(id);
-    auto tail_pos = bc_.is_leaf(node_id) ? bc_.link(node_id) : kNotFound;
+    auto tail_pos = bc_.is_leaf(node_id) ? bc_.link(node_id) : NOT_FOUND;
 
     while (node_id) {
       const auto parent_id = bc_.check(node_id);
-      ret.push_back(edge_(parent_id, node_id));
+      dec += edge_(parent_id, node_id);
       node_id = parent_id;
     }
 
-    std::reverse(std::begin(ret) + orig_size, std::end(ret));
+    std::reverse(std::begin(dec), std::end(dec));
 
-    if (tail_pos != 0 && tail_pos != kNotFound) {
-      if (binary_mode_) {
+    if (tail_pos != 0 && tail_pos != NOT_FOUND) {
+      if (bin_mode_) {
         do {
-          ret.push_back(tail_[tail_pos]);
+          dec += tail_[tail_pos];
         } while (!boundary_flags_[tail_pos++]);
       } else {
         do {
-          ret.push_back(tail_[tail_pos++]);
+          dec += tail_[tail_pos++];
         } while (tail_[tail_pos]);
       }
     }
 
-    return ret.size() - orig_size;
+    return dec;
   }
 
   // Iterator class for enumerating the keys and IDs included as prefixes of a
@@ -113,34 +115,34 @@ public:
     }
 
     // Gets the key
-    std::pair<const uint8_t*, size_t> key() const {
-      return {key_, pos_};
+    std::string_view key() const {
+      return {key_.data(), pos_};
     };
     // Gets the ID
     id_type id() const {
-      return trie_->to_key_id_(node_id_);
+      return id_;
     }
 
   private:
-    const type* trie_ {};
-    const uint8_t* key_ {};
-    const size_t length_ {};
+    const type* trie_{};
+    const std::string_view key_{};
 
-    size_t pos_ {0};
-    id_type node_id_ {0};
+    size_t pos_{0};
+    id_type node_id_{0};
+    id_type id_{};
 
-    bool begin_flag_ {true};
-    bool end_flag_ {false};
+    bool begin_flag_{true};
+    bool end_flag_{false};
 
-    PrefixIterator(const type* trie, const uint8_t* key, size_t length)
-      : trie_{trie}, key_{key}, length_{length} {}
+    PrefixIterator(const type* trie, std::string_view key)
+      : trie_{trie}, key_{key} {}
 
     friend class Trie;
   };
 
   // Makes PrefixIterator from a given key
-  PrefixIterator make_prefix_iterator(const uint8_t* key, size_t length) const {
-    return PrefixIterator{this, key, length};
+  PrefixIterator make_prefix_iterator(std::string_view key) const {
+    return PrefixIterator{this, key};
   }
 
   // Iterator class for enumerating the keys and IDs starting with prefixes of a
@@ -156,7 +158,7 @@ public:
     }
 
     // Gets the key
-    std::pair<const uint8_t*, size_t> key() const {
+    std::string_view key() const {
       return {buf_.data(), buf_.size()};
     };
     // Gets the ID
@@ -165,34 +167,32 @@ public:
     }
 
   private:
-    const type* trie_ {};
-    const uint8_t* key_ {};
-    const size_t length_ {};
+    const type* trie_{};
+    const std::string_view key_{};
 
-    bool begin_flag_ {true};
-    bool end_flag_ {false};
+    bool begin_flag_{true};
+    bool end_flag_{false};
 
-    struct entry {
-      id_type node_id;
+    struct stack_t {
       size_t depth;
-      uint8_t c;
+      char c;
+      id_type node_id;
     };
 
-    std::vector<entry> stack_ {};
-    std::vector<uint8_t> buf_ {};
-    id_type id_ {};
+    std::vector<stack_t> stack_{};
+    std::string buf_{};
+    id_type id_{};
 
-    PredictiveIterator(const type* trie, const uint8_t* key, size_t length)
-      : trie_{trie}, key_{key}, length_{length} {
+    PredictiveIterator(const type* trie, std::string_view key)
+      : trie_{trie}, key_{key} {
       buf_.reserve(trie->max_length());
     }
 
     friend class Trie;
   };
 
-  PredictiveIterator
-  make_predictive_iterator(const uint8_t* key, size_t length) const {
-    return {this, key, length};
+  PredictiveIterator make_predictive_iterator(std::string_view key) const {
+    return {this, key};
   }
 
   // Gets the number of registered keys in the dictionary
@@ -206,8 +206,8 @@ public:
   }
 
   // Gets the binary mode
-  bool is_binary_mode() const {
-    return binary_mode_;
+  bool bin_mode() const {
+    return bin_mode_;
   }
 
   // Gets the size of alphabet drawing keys in the dictionary.
@@ -241,7 +241,7 @@ public:
     ret += sizeof(table_);
     ret += sizeof(num_keys_);
     ret += sizeof(max_length_);
-    ret += sizeof(binary_mode_);
+    ret += sizeof(bin_mode_);
     return ret;
   }
 
@@ -257,9 +257,11 @@ public:
     show_size("\tsize in bytes: ", size_in_bytes(), os);
     os << "member size statistics of xcdat::Trie" << std::endl;
     show_size_ratio("\tbc:            ", bc_.size_in_bytes(), total_size, os);
-    show_size_ratio("\tterminal_flags:", terminal_flags_.size_in_bytes(), total_size, os);
+    show_size_ratio("\tterminal_flags:", terminal_flags_.size_in_bytes(),
+                    total_size, os);
     show_size_ratio("\ttail:          ", tail_.size_in_bytes(), total_size, os);
-    show_size_ratio("\tboundary_flags:", boundary_flags_.size_in_bytes(), total_size, os);
+    show_size_ratio("\tboundary_flags:", boundary_flags_.size_in_bytes(),
+                    total_size, os);
     bc_.show_stat(os);
   }
 
@@ -273,7 +275,11 @@ public:
     os.write(reinterpret_cast<const char*>(table_), 512);
     write_value(num_keys_, os);
     write_value(max_length_, os);
-    write_value(binary_mode_, os);
+    write_value(bin_mode_, os);
+  }
+
+  void swap(Trie& rhs) {
+    std::swap(*this, rhs);
   }
 
   // Disallows copy and assignment.
@@ -284,16 +290,16 @@ public:
   Trie& operator=(Trie&&) noexcept = default;
 
 private:
-  bc_type bc_ {};
-  BitVector terminal_flags_ {};
-  Vector<uint8_t> tail_ {};
-  BitVector boundary_flags_ {}; // used if binary_mode_ == true
-  Vector<uint8_t> alphabet_ {};
-  uint8_t table_[512] {}; // table[table[c] + 256] = c
+  bc_type bc_{};
+  BitVector terminal_flags_{};
+  Vector<char> tail_{};
+  BitVector boundary_flags_{}; // used if binary_mode_ == true
+  Vector<uint8_t> alphabet_{};
+  uint8_t table_[512]{}; // table[table[c] + 256] = c
 
-  size_t num_keys_ {};
-  size_t max_length_ {};
-  bool binary_mode_ {};
+  size_t num_keys_{};
+  size_t max_length_{};
+  bool bin_mode_{};
 
   id_type to_key_id_(id_type node_id) const {
     return terminal_flags_.rank(node_id);
@@ -301,29 +307,31 @@ private:
   id_type to_node_id_(id_type string_id) const {
     return terminal_flags_.select(string_id);
   };
-  uint8_t edge_(id_type node_id, id_type child_id) const {
-    return table_[static_cast<uint8_t>(bc_.base(node_id) ^ child_id) + 256];
+  id_type code_(char c) const {
+    return table_[static_cast<uint8_t>(c)];
+  }
+  char edge_(id_type node_id, id_type child_id) const {
+    return static_cast<char>(table_[(bc_.base(node_id) ^ child_id) + 256]);
   }
 
-  bool match_suffix_(const uint8_t* key, size_t length, size_t pos,
-                     size_t tail_pos) const {
-    assert(pos <= length);
+  bool match_suffix_(std::string_view key, size_t pos, size_t tail_pos) const {
+    assert(pos <= key.length());
 
-    if (pos == length) {
+    if (pos == key.length()) {
       return tail_pos == 0;
     }
 
-    if (binary_mode_) {
+    if (bin_mode_) {
       do {
         if (key[pos] != tail_[tail_pos]) {
           return false;
         }
         ++pos;
         if (boundary_flags_[tail_pos]) {
-          return pos == length;
+          return pos == key.length();
         }
         ++tail_pos;
-      } while (pos < length);
+      } while (pos < key.length());
       return false;
     } else {
       do {
@@ -332,21 +340,21 @@ private:
         }
         ++pos;
         ++tail_pos;
-      } while (pos < length);
+      } while (pos < key.length());
       return !tail_[tail_pos];
     }
   }
 
-  void extract_suffix_(size_t tail_pos, std::vector<uint8_t>& dec) const {
-    if (binary_mode_) {
+  void extract_suffix_(size_t tail_pos, std::string& dec) const {
+    if (bin_mode_) {
       if (tail_pos != 0) {
         do {
-          dec.push_back(tail_[tail_pos]);
+          dec += tail_[tail_pos];
         } while (!boundary_flags_[tail_pos++]);
       }
     } else {
       while (tail_[tail_pos] != '\0') {
-        dec.push_back(tail_[tail_pos]);
+        dec += tail_[tail_pos];
         ++tail_pos;
       }
     }
@@ -360,19 +368,21 @@ private:
     if (it->begin_flag_) {
       it->begin_flag_ = false;
       if (terminal_flags_[it->node_id_]) {
+        it->id_ = to_key_id_(it->node_id_);
         return true;
       }
     }
 
     while (!bc_.is_leaf(it->node_id_)) {
-      id_type child_id = bc_.base(it->node_id_) ^table_[it->key_[it->pos_++]];
+      id_type child_id = bc_.base(it->node_id_) ^code_(it->key_[it->pos_++]);
       if (bc_.check(child_id) != it->node_id_) {
         it->end_flag_ = true;
-        it->node_id_ = kNotFound;
+        it->id_ = NOT_FOUND;
         return false;
       }
       it->node_id_ = child_id;
       if (!bc_.is_leaf(it->node_id_) && terminal_flags_[it->node_id_]) {
+        it->id_ = to_key_id_(it->node_id_);
         return true;
       }
     }
@@ -380,12 +390,13 @@ private:
     it->end_flag_ = true;
     size_t tail_pos = bc_.link(it->node_id_);
 
-    if (!match_suffix_(it->key_, it->length_, it->pos_, tail_pos)) {
-      it->node_id_ = kNotFound;
+    if (!match_suffix_(it->key_, it->pos_, tail_pos)) {
+      it->id_ = NOT_FOUND;
       return false;
     }
 
-    it->pos_ = it->length_;
+    it->pos_ = it->key_.length();
+    it->id_ = to_key_id_(it->node_id_);
     return true;
   }
 
@@ -400,7 +411,7 @@ private:
       id_type node_id = 0;
       size_t pos = 0;
 
-      for (; pos < it->length_; ++pos) {
+      for (; pos < it->key_.length(); ++pos) {
         if (bc_.is_leaf(node_id)) {
           it->end_flag_ = true;
 
@@ -409,29 +420,29 @@ private:
             return false;
           }
 
-          if (binary_mode_) {
+          if (bin_mode_) {
             do {
               if (it->key_[pos] != tail_[tail_pos]) {
                 return false;
               }
-              it->buf_.push_back(it->key_[pos++]);
+              it->buf_ += it->key_[pos++];
               if (boundary_flags_[tail_pos]) {
-                if (pos == it->length_) {
+                if (pos == it->key_.length()) {
                   it->id_ = to_key_id_(node_id);
                   return true;
                 }
                 return false;
               }
               ++tail_pos;
-            } while (pos < it->length_);
+            } while (pos < it->key_.length());
           } else {
             do {
               if (it->key_[pos] != tail_[tail_pos] || !tail_[tail_pos]) {
                 return false;
               }
-              it->buf_.push_back(it->key_[pos++]);
+              it->buf_ += it->key_[pos++];
               ++tail_pos;
-            } while (pos < it->length_);
+            } while (pos < it->key_.length());
           }
 
           it->id_ = to_key_id_(node_id);
@@ -439,7 +450,7 @@ private:
           return true;
         }
 
-        id_type child_id = bc_.base(node_id) ^table_[it->key_[pos]];
+        id_type child_id = bc_.base(node_id) ^code_(it->key_[pos]);
 
         if (bc_.check(child_id) != node_id) {
           it->end_flag_ = true;
@@ -447,13 +458,13 @@ private:
         }
 
         node_id = child_id;
-        it->buf_.push_back(it->key_[pos]);
+        it->buf_ += it->key_[pos];
       }
 
       if (!it->buf_.empty()) {
-        it->stack_.push_back({node_id, pos, it->buf_.back()});
+        it->stack_.push_back({pos, it->buf_.back(), node_id});
       } else {
-        it->stack_.push_back({node_id, pos});
+        it->stack_.push_back({pos, '\0', node_id});
       }
     }
 
@@ -477,10 +488,13 @@ private:
       const id_type base = bc_.base(node_id);
 
       // For lex sort
-      for (int i = static_cast<int>(alphabet_.size()) - 1; i >= 0; --i) {
-        const id_type child_id = base ^table_[alphabet_[i]];
+      for (auto rit = std::rbegin(alphabet_);
+           rit != std::rend(alphabet_); ++rit) {
+        const id_type child_id = base ^code_(*rit);
         if (bc_.check(child_id) == node_id) {
-          it->stack_.push_back({child_id, depth + 1, alphabet_[i]});
+          it->stack_.push_back(
+            {depth + 1, static_cast<char>(*rit), child_id}
+          );
         }
       }
 

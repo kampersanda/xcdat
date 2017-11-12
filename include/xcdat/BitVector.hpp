@@ -40,6 +40,10 @@ public:
 
   void write(std::ostream &os) const;
 
+  void swap(BitVector& rhs) {
+    std::swap(*this, rhs);
+  }
+
   BitVector(const BitVector&) = delete;
   BitVector& operator=(const BitVector&) = delete;
 
@@ -47,14 +51,14 @@ public:
   BitVector& operator=(BitVector&&) noexcept = default;
 
 private:
-  static constexpr id_type kBitsInR1 {256};
-  static constexpr id_type kBitsInR2 {32};
-  static constexpr id_type kR1PerR2 {kBitsInR1 / kBitsInR2}; // 8
-  static constexpr id_type kNum1sPerTip {512};
+  static constexpr id_type BITS_IN_R1 {256};
+  static constexpr id_type BITS_IN_R2 {32};
+  static constexpr id_type R1_PER_R2 {BITS_IN_R1 / BITS_IN_R2}; // 8
+  static constexpr id_type ONES_PER_TIP {512};
 
   struct RankTip {
     id_type L1;
-    uint8_t L2[kR1PerR2];
+    uint8_t L2[R1_PER_R2];
   };
 
   Vector<uint32_t> bits_ {};

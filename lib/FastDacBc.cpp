@@ -1,4 +1,4 @@
-#include "FastDacBc.hpp"
+#include "xcdat/FastDacBc.hpp"
 
 namespace xcdat {
 
@@ -9,7 +9,7 @@ FastDacBc::FastDacBc(std::istream& is) {
 #ifdef XCDAT_X64
   values_L4_ = Vector<uint64_t>(is);
 #endif
-  for (size_t i = 0; i < kLayers - 1; ++i) {
+  for (size_t i = 0; i < LAYERS - 1; ++i) {
     ranks_[i] = Vector<id_type>(is);
   }
   leaf_flags_ = BitVector(is);
@@ -29,17 +29,17 @@ FastDacBc::FastDacBc(const std::vector<BcPair>& bc,
 #ifdef XCDAT_X64
   std::vector<uint64_t> values_L4;
 #endif
-  std::vector<id_type> ranks[kLayers - 1];
+  std::vector<id_type> ranks[LAYERS - 1];
   std::vector<id_type> links;
   leaf_flags_ = BitVector(leaf_flags, true, false);
 
   ranks[0].reserve((bc.size() * 2) / 128);
 
   auto append = [&](id_type value) {
-    if ((values_L1.size() % kBlockLenL1) == 0) {
+    if ((values_L1.size() % BLOCK_SIZE_L1) == 0) {
       ranks[0].push_back(static_cast<id_type>(values_L2.size()));
     }
-    if ((value / kBlockLenL1) == 0) {
+    if ((value / BLOCK_SIZE_L1) == 0) {
       values_L1.push_back(static_cast<uint8_t>(0 | (value << 1)));
       return;
     } else {
@@ -47,10 +47,10 @@ FastDacBc::FastDacBc(const std::vector<BcPair>& bc,
       values_L1.push_back(static_cast<uint8_t>(1 | (pos << 1)));
     }
 
-    if ((values_L2.size() % kBlockLenL2) == 0) {
+    if ((values_L2.size() % BLOCK_SIZE_L2) == 0) {
       ranks[1].push_back(static_cast<id_type>(values_L3.size()));
     }
-    if ((value / kBlockLenL2) == 0) {
+    if ((value / BLOCK_SIZE_L2) == 0) {
       values_L2.push_back(static_cast<uint16_t>(0 | (value << 1)));
       return;
     } else {
@@ -59,10 +59,10 @@ FastDacBc::FastDacBc(const std::vector<BcPair>& bc,
     }
 
 #ifdef XCDAT_X64
-    if ((values_L3.size() % kBlockLenL3) == 0) {
+    if ((values_L3.size() % BLOCK_SIZE_L3) == 0) {
       ranks[1].push_back(static_cast<id_type>(values_L4.size()));
     }
-    if ((value / kBlockLenL3) == 0) {
+    if ((value / BLOCK_SIZE_L3) == 0) {
       values_L3.push_back(static_cast<uint32_t>(0 | (value << 1)));
       return;
     } else {
@@ -76,7 +76,7 @@ FastDacBc::FastDacBc(const std::vector<BcPair>& bc,
   };
 
   auto append_leaf = [&](id_type value) {
-    if ((values_L1.size() % kBlockLenL1) == 0) {
+    if ((values_L1.size() % BLOCK_SIZE_L1) == 0) {
       ranks[0].push_back(static_cast<id_type>(values_L2.size()));
     }
     values_L1.push_back(static_cast<uint8_t>(value & 0xFF));
@@ -103,7 +103,7 @@ FastDacBc::FastDacBc(const std::vector<BcPair>& bc,
 #ifdef XCDAT_X64
   values_L4_ = Vector<uint64_t>(values_L4);
 #endif
-  for (uint8_t j = 0; j < kLayers - 1; ++j) {
+  for (uint8_t j = 0; j < LAYERS - 1; ++j) {
     ranks_[j] = Vector<id_type>(ranks[j]);
   }
   links_ = FitVector(links);
@@ -167,18 +167,18 @@ id_type FastDacBc::access_(id_type i) const {
   if ((values_L1_[i] & 1U) == 0) {
     return value;
   }
-  i = ranks_[0][i / kBlockLenL1] + value;
+  i = ranks_[0][i / BLOCK_SIZE_L1] + value;
   value = values_L2_[i] >> 1;
   if ((values_L2_[i] & 1U) == 0) {
     return value;
   }
-  i = ranks_[1][i / kBlockLenL2] + value;
+  i = ranks_[1][i / BLOCK_SIZE_L2] + value;
 #ifdef XCDAT_X64
   value = values_L3_[i] >> 1;
   if ((values_L3_[i] & 1U) == 0) {
     return value;
   }
-  i = ranks_[2][i / kBlockLenL3] + value;
+  i = ranks_[2][i / BLOCK_SIZE_L3] + value;
   return values_L4_[i];
 #else
   return values_L3_[i];
