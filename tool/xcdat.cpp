@@ -59,23 +59,24 @@ extract_views(const std::vector<std::string>& keys) {
 
 void show_usage(std::ostream& os) {
   os << "xcdat build <type> <key> <dict>\n";
-  os << "\t<type>\t'1' for DACs; '2' for FDACs.\n";
-  os << "\t<key> \tinput file of a set of keys.\n";
-  os << "\t<dict>\toutput file of the dictionary.\n";
+  os << "\t<type>\t1: DACs, 2: FDACs\n";
+  os << "\t<key> \tInput file name of a set of keys (must be sorted)\n";
+  os << "\t<dict>\tOutput file name of the dictionary (optional)\n";
+  os << "\t      \tIf omitted, <key>.dacs or <key>.fdacs is output\n";
   os << "xcdat query <type> <dict> <limit>\n";
-  os << "\t<type> \t'1' for DACs; '2' for FDACs.\n";
-  os << "\t<dict> \tinput file of the dictionary.\n";
-  os << "\t<limit>\tlimit at lookup (default=10).\n";
+  os << "\t<type> \t1: DACs, 2: FDACs\n";
+  os << "\t<dict> \tInput file name of the dictionary\n";
+  os << "\t<limit>\tLimit of #results (optional, default=10)\n";
   os << "xcdat bench <type> <dict> <key>\n";
-  os << "\t<type>\t'1' for DACs; '2' for FDACs.\n";
-  os << "\t<dict>\tinput file of the dictionary.\n";
-  os << "\t<key> \tinput file of keys for benchmark.\n";
+  os << "\t<type>\t1: DACs, 2: FDACs\n";
+  os << "\t<dict>\tInput file name of the dictionary\n";
+  os << "\t<key> \tInput file name of keys for benchmark\n";
   os.flush();
 }
 
 template<bool Fast>
 int build(std::vector<std::string>& args) {
-  if (args.size() != 4) {
+  if (args.size() != 3 && args.size() != 4) {
     show_usage(std::cerr);
     return 1;
   }
@@ -106,9 +107,16 @@ int build(std::vector<std::string>& args) {
   trie.show_stat(std::cout);
 
   {
-    std::ofstream ofs{args[3] + (Fast ? ".fdac" : ".dac")};
+    std::string out_name;
+    if (args.size() == 4) {
+      out_name = args[3];
+    } else {
+      out_name = args[2] + (Fast ? ".fdac" : ".dac");
+    }
+
+    std::ofstream ofs{out_name};
     if (!ofs) {
-      std::cerr << "open error : " << args[3] << std::endl;
+      std::cerr << "open error : " << out_name << std::endl;
       return 1;
     }
     trie.write(ofs);
@@ -224,10 +232,17 @@ int bench(std::vector<std::string>& args) {
   }
 
   auto keys = extract_views(keys_buffer);
-
   std::vector<id_type> ids(keys.size());
+
+  std::cout << "Warm up" << std::endl;
+
   for (size_t i = 0; i < keys.size(); ++i) {
     ids[i] = trie.lookup(keys[i]);
+    if (ids[i] == Trie<Fast>::NOT_FOUND) {
+      std::cerr << "A non-registered key is included, "
+                << keys_buffer[i] << std::endl;
+      return 1;
+    }
   }
 
   {
@@ -236,8 +251,8 @@ int bench(std::vector<std::string>& args) {
     StopWatch sw;
     for (uint32_t r = 0; r < RUNS; ++r) {
       for (size_t i = 0; i < keys.size(); ++i) {
-        if (trie.lookup(keys[i]) == Trie<Fast>::NOT_FOUND) {
-          std::cerr << "Failed to lookup " << keys_buffer[i] << std::endl;
+        if (trie.lookup(keys[i]) != ids[i]) {
+          std::cerr << "Critical lookup error ʅ( ՞ਊ՞)ʃ" << std::endl;
           return 1;
         }
       }
@@ -255,7 +270,7 @@ int bench(std::vector<std::string>& args) {
       for (auto id : ids) {
         auto dec = trie.access(id);
         if (dec.empty()) {
-          std::cerr << "Failed to access " << id << std::endl;
+          std::cerr << "Critical access error ʅ( ՞ਊ՞)ʃ" << std::endl;
           return 1;
         }
       }
