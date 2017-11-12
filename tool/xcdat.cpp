@@ -142,8 +142,8 @@ int query(std::vector<std::string>& args) {
   std::string query;
 
   while (true){
-    putchar('> ');
-    getline(std::cin, query);
+    std::cout << "> " << std::flush;
+    std::getline(std::cin, query);
     if (query.empty()){
       break;
     }
