@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Shunsuke Kanda" />
+  <meta name="dcterms.date" content="2017-01-01" />
+  <title>Xcdat: XOR-compressed double-array trie</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      div.line-block{white-space: pre-line;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <style type="text/css">
+div.sourceLine, a.sourceLine { display: inline-block; min-height: 1.25em; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; }
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+div.sourceLine, a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource div.sourceLine, .numberSource a.sourceLine
+  { position: relative; }
+pre.numberSource div.sourceLine::before, .numberSource a.sourceLine::before
+  { content: attr(data-line-number);
+    position: absolute; left: -5em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em; }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; color: #aaaaaa;  padding-left: 4px; }
+@media screen {
+a.sourceLine::before { text-decoration: underline; color: initial; }
+}
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.bn { color: #40a070; } /* BaseN */
+code span.fl { color: #40a070; } /* Float */
+code span.ch { color: #4070a0; } /* Char */
+code span.st { color: #4070a0; } /* String */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.ot { color: #007020; } /* Other */
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.fu { color: #06287e; } /* Function */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code span.cn { color: #880000; } /* Constant */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.im { } /* Import */
+code span.va { color: #19177c; } /* Variable */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.op { color: #666666; } /* Operator */
+code span.bu { } /* BuiltIn */
+code span.ex { } /* Extension */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.at { color: #7d9029; } /* Attribute */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="style.css">
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header>
+<h1 class="title">Xcdat: XOR-compressed double-array trie</h1>
+<p align="center">Created by <a href="https://github.com/kampersanda">Shunsuke Kanda</a></p>
+</header>
+<h2>Contents</h2>
+<nav id="TOC">
+<ul>
+<li><a href="#what-is-xcdat">What is Xcdat?</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#build-instructions">Build Instructions</a></li>
+<li><a href="#command-line-tools">Command Line Tools</a></li>
+<li><a href="#sample-usage">Sample Usage</a></li>
+<li><a href="#api">API</a></li>
+<li><a href="#benchmark">Benchmark</a></li>
+<li><a href="#to-do">To Do</a></li>
+<li><a href="#licensing">Licensing</a></li>
+<li><a href="#citation">Citation</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</nav>
+<h2 id="what-is-xcdat">What is Xcdat?</h2>
+<p>Xcdat is a C++ library that implements static compressed string dictionaries based on an improved double-array trie.</p>
+<p>The double array (Aoe, 1989) is known as the fastest trie representation and has been used in many trie libraries. On the other hand, it has a space efficiency problem because of a pointer-based data structure. Xcdat solves the problem using the XOR-compressed double-array methods described in the following article.</p>
+<blockquote>
+<p>Shunsuke Kanda, Kazuhiro Morita, and Masao Fuketa. Compressed double-array tries for string dictionaries supporting fast lookup. Knowledge and Information Systems, 51(3): 1023–1042, 2017.</p>
+</blockquote>
+<p>Xcdat can implement trie dictionaries in smaller space compared to the other double-array libraries. In addition, the lookup speed is relatively fast in compressed data structures from the double-array advantage.</p>
+<p>Xcdat is available at <a href="https://github.com/kampersanda/xcdat">GitHub repsitory</a>.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Compressed Data Structure</strong>: Xcdat practically compresses double-array elements for representing node pointers by using the XCDA methods. While the original double array uses 8 bytes (or 16 bytes) per node, it uses about 3–4 bytes (but, depending on datasets). In addition, the dictionary is implemented using a minimal-prefix trie (Yata et al., 2007) that is effective for long strings in time and space.</li>
+<li><strong>Two Compression Approaches</strong>: There are two approaches of compressing elements: using byte-oriented DACs (Brisaboa et al., 2013) and using pointer-based ones (Kanda et al., 2017). For characterless strings such as natural language keywords, the former will be slightly smaller and the latter will be slightly faster. For long strings such as URLs, the latter will outperform the former. Xcdat implements the two versions by using a static polymorphism with C++ template to avoid an overhead of virtual functions.</li>
+<li><strong>64-bit Version</strong>: Although Xcdat represents node addresses using 32-bit integers in default configuration, we can allow for 64-bit integers by defining <code>XCDAT_X64</code>; therefore, the dictionary can be constructed from a very large dataset. The construction space becomes large, but the output dictionary size is nearly equal.</li>
+<li><strong>NULL Character</strong>: The dictionary can be constructed from keys including the NULL character by setting the second parameter of <code>xcdat::TrieBuilder::build()</code> to <code>true</code>.</li>
+<li><strong>Dictionary Encoding</strong>: Xcdat supports mapping N different strings to unique IDs in [0,N-1]. That is to say, it supports two basic dictionary operations: Lookup returns the ID corresponding to a given string and Access (also called ReverseLookup) returns the string corresponding to a given ID. Therefore, Xcdat is very useful in many applications for string precessing and indexing, such as described in (Martínez-Prieto et al., 2016).</li>
+<li><strong>Fast Operations</strong>: Xcdat can provide lookup operations faster than other compressed trie libraries because it is based on the double-array trie. On the other hand, compared to the existing double-array libraries, the speed will be slower due to the compression.</li>
+<li><strong>Prefix-based Lookup Operations</strong>: As with other trie libraries, Xcdat also provides prefix-based lookup operations required for natural language processing and so on.</li>
+</ul>
+<h2 id="build-instructions">Build Instructions</h2>
+<p>You can download and compile Xcdat as the following commands.</p>
+<pre><code>$ git clone https://github.com/kampersanda/xcdat.git
+$ cd xcdat
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+$ make install</code></pre>
+<p>If you want to use a 64-bit setting, please add <code>-DXCDAT_X64=ON</code> to the CMake option. In addition, you can use the SSE4.2 POPCNT instruction by adding <code>-DXCDAT_USE_POPCNT=ON</code> for Rank/Select operations. The code has been tested only on Mac OS X and Linux. That is, this library considers only UNIX-compatible OS.</p>
+<h2 id="command-line-tools">Command Line Tools</h2>
+<p><code>xcdat</code> is a general-purpose command line tool to provide three modes as follows.</p>
+<pre><code>$ xcdat 
+xcdat build &lt;type&gt; &lt;key&gt; &lt;dict&gt;
+    &lt;type&gt;  1: DACs, 2: FDACs
+    &lt;key&gt;   Input file name of a set of keys (must be sorted)
+    &lt;dict&gt;  Output file name of the dictionary (optional)
+            If omitted, &lt;key&gt;.dacs or &lt;key&gt;.fdacs is output
+xcdat query &lt;type&gt; &lt;dict&gt; &lt;limit&gt;
+    &lt;type&gt;  1: DACs, 2: FDACs
+    &lt;dict&gt;  Input file name of the dictionary
+    &lt;limit&gt; Limit of #results (optional, default=10)
+xcdat bench &lt;type&gt; &lt;dict&gt; &lt;key&gt;
+    &lt;type&gt;  1: DACs, 2: FDACs
+    &lt;dict&gt;  Input file name of the dictionary
+    &lt;key&gt;   Input file name of keys for benchmark</code></pre>
+<h3 id="example-1-construction">Example 1: Construction</h3>
+<p>Command <code>xcdat build [params...]</code> builds Xcdat dictionaries from a given dataset and saves it to a file, as follows.</p>
+<pre><code>$ xcdat build 1 jawiki-all-titles
+constr. time:   1.58574 sec
+cmpr. ratio:    0.524287 over the raw size
+
+basic statistics of xcdat::Trie&lt;false&gt;
+    num keys:       1738995
+    alphabet size:  189
+    num nodes:      4042496
+    num used nodes: 4034357
+    num free nodes: 8139
+    size in bytes:  20546967
+member size statistics of xcdat::Trie&lt;false&gt;
+    bc:             13879098    0.675482
+    terminal_flags: 708448  0.0344794
+    tail:           5958655 0.290002
+    boundary_flags: 40  1.94676e-06
+basic statistics of xcdat::DacBc
+    num links:      1499605
+    bytes per node: 3.4333
+member size statistics of xcdat::DacBc
+    values_L0:  8085000 0.582531
+    values_L1:  746760  0.0538046
+    values_L2:  22581   0.00162698
+    flags_L0:   1389660 0.100126
+    flags_L1:   128400  0.00925132
+    leaves:     694856  0.0500649
+    links:      2811784 0.202591
+
+output -&gt; jawiki-all-titles.dac</code></pre>
+<h3 id="example-2-query-processing">Example 2: Query Processing</h3>
+<p>Command <code>xcdat query [params...]</code> loads a dictionary file and tests lookup operations, as follows.</p>
+<pre><code>$ xcdat query 1 jawiki-all-titles.dac
+&gt; NEW_GAME!
+Lookup
+125989  NEW_GAME!
+Common Prefix Lookup
+28  N
+124185  NE
+125428  NEW
+125988  NEW_GAME
+125989  NEW_GAME!
+5 found
+Predictive Lookup
+125989  NEW_GAME!
+126003  NEW_GAME!!
+126059  NEW_GAME!_-THE_CHALLENGE_STAGE!-
+3 found</code></pre>
+<h3 id="example-3-benchmark-test">Example 3: Benchmark Test</h3>
+<p>Command <code>xcdat bench [params...]</code> tests time performances of a given dictionary, as follows.</p>
+<pre><code>$ xcdat bench 1 jawiki-all-titles.dac jawiki-all-titles.rnd
+Warm up
+Lookup benchmark on 10 runs
+1.5065 us per str
+Access benchmark on 10 runs
+1.81289 us per ID</code></pre>
+<h2 id="sample-usage">Sample Usage</h2>
+<p>The following code shows an easy routine sample.</p>
+<pre class="sourceCode cpp" id="cb6"><code class="sourceCode cpp"><div class="sourceLine" id="cb6-1" data-line-number="1"><span class="pp">#include </span><span class="im">&lt;iostream&gt;</span></div>
+<div class="sourceLine" id="cb6-2" data-line-number="2"><span class="pp">#include </span><span class="im">&lt;xcdat.hpp&gt;</span></div>
+<div class="sourceLine" id="cb6-3" data-line-number="3"></div>
+<div class="sourceLine" id="cb6-4" data-line-number="4"><span class="dt">int</span> main() {</div>
+<div class="sourceLine" id="cb6-5" data-line-number="5">  <span class="bu">std::</span>vector&lt;<span class="bu">std::</span>string&gt; keys_buf = {</div>
+<div class="sourceLine" id="cb6-6" data-line-number="6">    <span class="st">&quot;Aoba&quot;</span>, <span class="st">&quot;Yun&quot;</span>, <span class="st">&quot;Hajime&quot;</span>, <span class="st">&quot;Hihumi&quot;</span>, <span class="st">&quot;Kou&quot;</span>, <span class="st">&quot;Rin&quot;</span>,</div>
+<div class="sourceLine" id="cb6-7" data-line-number="7">    <span class="st">&quot;Hazuki&quot;</span>, <span class="st">&quot;Umiko&quot;</span>, <span class="st">&quot;Nene&quot;</span>, <span class="st">&quot;Nenecchi&quot;</span></div>
+<div class="sourceLine" id="cb6-8" data-line-number="8">  };</div>
+<div class="sourceLine" id="cb6-9" data-line-number="9"></div>
+<div class="sourceLine" id="cb6-10" data-line-number="10">  <span class="co">// Convert to the input format</span></div>
+<div class="sourceLine" id="cb6-11" data-line-number="11">  <span class="bu">std::</span>vector&lt;<span class="bu">std::</span>string_view&gt; keys(keys_buf.size());</div>
+<div class="sourceLine" id="cb6-12" data-line-number="12">  <span class="cf">for</span> (<span class="dt">size_t</span> i = <span class="dv">0</span>; i &lt; keys.size(); ++i) {</div>
+<div class="sourceLine" id="cb6-13" data-line-number="13">    keys[i] = <span class="bu">std::</span>string_view{keys_buf[i]};</div>
+<div class="sourceLine" id="cb6-14" data-line-number="14">  }</div>
+<div class="sourceLine" id="cb6-15" data-line-number="15"></div>
+<div class="sourceLine" id="cb6-16" data-line-number="16">  <span class="co">// Input data must be sorted.</span></div>
+<div class="sourceLine" id="cb6-17" data-line-number="17">  <span class="bu">std::</span>sort(<span class="bu">std::</span>begin(keys), <span class="bu">std::</span>end(keys));</div>
+<div class="sourceLine" id="cb6-18" data-line-number="18"></div>
+<div class="sourceLine" id="cb6-19" data-line-number="19">  <span class="co">// Dictionary class</span></div>
+<div class="sourceLine" id="cb6-20" data-line-number="20">  <span class="kw">using</span> Trie = xcdat::Trie&lt;<span class="kw">true</span>&gt;;</div>
+<div class="sourceLine" id="cb6-21" data-line-number="21"></div>
+<div class="sourceLine" id="cb6-22" data-line-number="22">  <span class="cf">try</span> {</div>
+<div class="sourceLine" id="cb6-23" data-line-number="23">    <span class="co">// Builds a dictionary from the keys</span></div>
+<div class="sourceLine" id="cb6-24" data-line-number="24">    Trie trie = xcdat::TrieBuilder::build&lt;<span class="kw">true</span>&gt;(keys); <span class="co">// move</span></div>
+<div class="sourceLine" id="cb6-25" data-line-number="25"></div>
+<div class="sourceLine" id="cb6-26" data-line-number="26">    <span class="co">// Writes the dictionary to a file.</span></div>
+<div class="sourceLine" id="cb6-27" data-line-number="27">    <span class="bu">std::</span>ofstream ofs{<span class="st">&quot;sample.bin&quot;</span>};</div>
+<div class="sourceLine" id="cb6-28" data-line-number="28">    trie.write(ofs);</div>
+<div class="sourceLine" id="cb6-29" data-line-number="29">  } <span class="cf">catch</span> (<span class="at">const</span> xcdat::TrieBuilder::Exception&amp; ex) {</div>
+<div class="sourceLine" id="cb6-30" data-line-number="30">    <span class="co">// Abort if something went wrong...</span></div>
+<div class="sourceLine" id="cb6-31" data-line-number="31">    <span class="bu">std::</span>cerr &lt;&lt; ex.what() &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-32" data-line-number="32">    <span class="cf">return</span> <span class="dv">1</span>;</div>
+<div class="sourceLine" id="cb6-33" data-line-number="33">  }</div>
+<div class="sourceLine" id="cb6-34" data-line-number="34"></div>
+<div class="sourceLine" id="cb6-35" data-line-number="35">  <span class="co">// Creates an empty dictionary</span></div>
+<div class="sourceLine" id="cb6-36" data-line-number="36">  Trie trie;</div>
+<div class="sourceLine" id="cb6-37" data-line-number="37">  {</div>
+<div class="sourceLine" id="cb6-38" data-line-number="38">    <span class="co">// Reads the dictionary to the file.</span></div>
+<div class="sourceLine" id="cb6-39" data-line-number="39">    <span class="bu">std::</span>ifstream ifs{<span class="st">&quot;sample.bin&quot;</span>};</div>
+<div class="sourceLine" id="cb6-40" data-line-number="40">    trie = Trie{ifs}; <span class="co">// move</span></div>
+<div class="sourceLine" id="cb6-41" data-line-number="41">  }</div>
+<div class="sourceLine" id="cb6-42" data-line-number="42"></div>
+<div class="sourceLine" id="cb6-43" data-line-number="43">  <span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;Performing basic operations...&quot;</span> &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-44" data-line-number="44">  {</div>
+<div class="sourceLine" id="cb6-45" data-line-number="45">    <span class="co">// lookup() obtains the unique ID for a given key</span></div>
+<div class="sourceLine" id="cb6-46" data-line-number="46">    xcdat::<span class="dt">id_type</span> key_id = trie.lookup(<span class="st">&quot;Rin&quot;</span>);</div>
+<div class="sourceLine" id="cb6-47" data-line-number="47">    <span class="co">// access() decodes the key from a given ID</span></div>
+<div class="sourceLine" id="cb6-48" data-line-number="48">    <span class="bu">std::</span>cout &lt;&lt; key_id &lt;&lt; <span class="st">&quot; : &quot;</span> &lt;&lt; trie.access(key_id) &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-49" data-line-number="49"></div>
+<div class="sourceLine" id="cb6-50" data-line-number="50">    <span class="co">// Given an unregistered key, lookup() returns NOT_FOUND.</span></div>
+<div class="sourceLine" id="cb6-51" data-line-number="51">    <span class="cf">if</span> (trie.lookup(<span class="st">&quot;Hotaru&quot;</span>) == Trie::NOT_FOUND) {</div>
+<div class="sourceLine" id="cb6-52" data-line-number="52">      <span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;? : &quot;</span> &lt;&lt; <span class="st">&quot;Hotaru&quot;</span> &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-53" data-line-number="53">    }</div>
+<div class="sourceLine" id="cb6-54" data-line-number="54">  }</div>
+<div class="sourceLine" id="cb6-55" data-line-number="55"></div>
+<div class="sourceLine" id="cb6-56" data-line-number="56">  <span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;Performing a common prefix operation...&quot;</span> &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-57" data-line-number="57">  {</div>
+<div class="sourceLine" id="cb6-58" data-line-number="58">    <span class="co">// Common prefix operation is implemented using PrefixIterator, created by</span></div>
+<div class="sourceLine" id="cb6-59" data-line-number="59">    <span class="co">// make_prefix_iterator().</span></div>
+<div class="sourceLine" id="cb6-60" data-line-number="60">    Trie::PrefixIterator it = trie.make_prefix_iterator(<span class="st">&quot;Nenecchi&quot;</span>);</div>
+<div class="sourceLine" id="cb6-61" data-line-number="61"></div>
+<div class="sourceLine" id="cb6-62" data-line-number="62">    <span class="co">// next() continues to obtain the next key until false is returned.</span></div>
+<div class="sourceLine" id="cb6-63" data-line-number="63">    <span class="cf">while</span> (it.next()) {</div>
+<div class="sourceLine" id="cb6-64" data-line-number="64">      <span class="bu">std::</span>cout &lt;&lt; it.id() &lt;&lt; <span class="st">&quot; : &quot;</span> &lt;&lt; it.key() &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-65" data-line-number="65">    }</div>
+<div class="sourceLine" id="cb6-66" data-line-number="66">  }</div>
+<div class="sourceLine" id="cb6-67" data-line-number="67"></div>
+<div class="sourceLine" id="cb6-68" data-line-number="68">  <span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;Performing a predictive operation...&quot;</span> &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-69" data-line-number="69">  {</div>
+<div class="sourceLine" id="cb6-70" data-line-number="70">    <span class="co">// Predictive operation is implemented using PredictiveIterator, created by</span></div>
+<div class="sourceLine" id="cb6-71" data-line-number="71">    <span class="co">// make_predictive_iterator().</span></div>
+<div class="sourceLine" id="cb6-72" data-line-number="72">    Trie::PredictiveIterator it = trie.make_predictive_iterator(<span class="st">&quot;Ha&quot;</span>);</div>
+<div class="sourceLine" id="cb6-73" data-line-number="73"></div>
+<div class="sourceLine" id="cb6-74" data-line-number="74">    <span class="co">// next() continues to obtain the next key until false is returned in</span></div>
+<div class="sourceLine" id="cb6-75" data-line-number="75">    <span class="co">// lexicographical order.</span></div>
+<div class="sourceLine" id="cb6-76" data-line-number="76">    <span class="cf">while</span> (it.next()) {</div>
+<div class="sourceLine" id="cb6-77" data-line-number="77">      <span class="bu">std::</span>cout &lt;&lt; it.id() &lt;&lt; <span class="st">&quot; : &quot;</span> &lt;&lt; it.key() &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-78" data-line-number="78">    }</div>
+<div class="sourceLine" id="cb6-79" data-line-number="79">  }</div>
+<div class="sourceLine" id="cb6-80" data-line-number="80"></div>
+<div class="sourceLine" id="cb6-81" data-line-number="81">  <span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;Enumerating all registered keys...&quot;</span> &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-82" data-line-number="82">  {</div>
+<div class="sourceLine" id="cb6-83" data-line-number="83">    <span class="co">// PredictiveIterator for an empty string provides enumeration of all</span></div>
+<div class="sourceLine" id="cb6-84" data-line-number="84">    <span class="co">// registered keys in lexicographical order.</span></div>
+<div class="sourceLine" id="cb6-85" data-line-number="85">    Trie::PredictiveIterator it = trie.make_predictive_iterator(<span class="st">&quot;&quot;</span>);</div>
+<div class="sourceLine" id="cb6-86" data-line-number="86">    <span class="cf">while</span> (it.next()) {</div>
+<div class="sourceLine" id="cb6-87" data-line-number="87">      <span class="bu">std::</span>cout &lt;&lt; it.id() &lt;&lt; <span class="st">&quot; : &quot;</span> &lt;&lt; it.key() &lt;&lt; <span class="bu">std::</span>endl;</div>
+<div class="sourceLine" id="cb6-88" data-line-number="88">    }</div>
+<div class="sourceLine" id="cb6-89" data-line-number="89">  }</div>
+<div class="sourceLine" id="cb6-90" data-line-number="90"></div>
+<div class="sourceLine" id="cb6-91" data-line-number="91">  <span class="cf">return</span> <span class="dv">0</span>;</div>
+<div class="sourceLine" id="cb6-92" data-line-number="92">}</div></code></pre>
+<p>The standard output is as follows.</p>
+<pre><code>Performing basic operations...
+7 : Rin
+? : Hotaru
+Performing common prefix operations...
+4 : Nene
+6 : Nenecchi
+Performing predictive operations...
+3 : Hajime
+5 : Hazuki
+Enumerating all registered keys...
+0 : Aoba
+3 : Hajime
+5 : Hazuki
+1 : Hihumi
+2 : Kou
+4 : Nene
+6 : Nenecchi
+7 : Rin
+8 : Umiko
+9 : Yun</code></pre>
+<p>As shown in the output, <code>xcdat::Trie</code> assigns unique integer IDs to each registered key. The ID order is random, depending on node arrangement.</p>
+<h2 id="api">API</h2>
+<p>You can build a dictionary using static member function <code>xcdat::TrieBuilder::build()</code>. This function receives a set of keywords and returns the resulting class object of <code>xcdat::Trie</code>. For the usage, refer to the header comments of <a href="https://github.com/kampersanda/xcdat/blob/master/include/xcdat/TrieBuilder.hpp"><code>xcdat::TrieBuilder.hpp</code></a>. Also for the usage of <code>xcdat::Trie</code>, refer to the header comments of <a href="https://github.com/kampersanda/xcdat/blob/master/include/xcdat/Trie.hpp"><code>xcdat::Trie</code></a>.</p>
+<p>The detailed descriptions of AIP are under construction…</p>
+<h2 id="benchmark">Benchmark</h2>
+<p>Work in progress…</p>
+<h2 id="to-do">To Do</h2>
+<ul>
+<li>Show benchmarks</li>
+<li>Create AIP descriptions</li>
+</ul>
+<h2 id="licensing">Licensing</h2>
+<p>This library is free software provided under the MIT License.</p>
+<h2 id="citation">Citation</h2>
+<p>If you use the library in academic settings, please cite the following paper.</p>
+<pre class="sourceCode bibtex" id="cb8"><code class="sourceCode bibtex"><div class="sourceLine" id="cb8-1" data-line-number="1"><span class="va">@article</span>{<span class="ot">kanda2017compressed</span>,</div>
+<div class="sourceLine" id="cb8-2" data-line-number="2">    <span class="dt">title</span>={Compressed double-array tries for string dictionaries supporting fast lookup},</div>
+<div class="sourceLine" id="cb8-3" data-line-number="3">    <span class="dt">author</span>={Kanda, Shunsuke and Morita, Kazuhiro and Fuketa, Masao},</div>
+<div class="sourceLine" id="cb8-4" data-line-number="4">    <span class="dt">journal</span>={Knowledge and Information Systems},</div>
+<div class="sourceLine" id="cb8-5" data-line-number="5">    <span class="dt">volume</span>={51},</div>
+<div class="sourceLine" id="cb8-6" data-line-number="6">    <span class="dt">number</span>={3},</div>
+<div class="sourceLine" id="cb8-7" data-line-number="7">    <span class="dt">pages</span>={1023--1042},</div>
+<div class="sourceLine" id="cb8-8" data-line-number="8">    <span class="dt">year</span>={2017},</div>
+<div class="sourceLine" id="cb8-9" data-line-number="9">    <span class="dt">publisher</span>={Springer}</div>
+<div class="sourceLine" id="cb8-10" data-line-number="10">}</div></code></pre>
+<h2 id="references">References</h2>
+<ul>
+<li>J. Aoe. An efficient digital search algorithm by using a double-array structure. IEEE Transactions on Software Engineering, 15(9):1066–1077, 1989.</li>
+<li>N. R. Brisaboa, S. Ladra, and G. Navarro. DACs: Bringing direct access to variable-length codes. Information Processing &amp; Management, 49(1):392–404, 2013.</li>
+<li>S. Kanda, K. Morita, and M. Fuketa. Compressed double-array tries for string dictionaries supporting fast lookup. Knowledge and Information Systems, 51(3): 1023–1042, 2017.</li>
+<li>M. A. Martínez-Prieto, N. Brisaboa, R. Cánovas, F. Claude, and G. Navarro. Practical compressed string dictionaries. Information Systems, 56:73–108, 2016</li>
+<li>S. Yata, M. Oono, K. Morita, M. Fuketa, T. Sumitomo, and J. Aoe. A compact static double-array keeping character codes. Information Processing &amp; Management, 43(1):237–247, 2007.</li>
+</ul>
+<footer>
+<p>Copyright &copy; 2017 Shunsuke Kanda, All Rights Reserved.</p>
+</footer>
+</body>
+</html>
