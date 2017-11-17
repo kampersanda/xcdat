@@ -12,6 +12,8 @@ configure_file(
   ${XCDAT_SOURCE_DIR}/include/xcdat/xcdat_config.hpp
 )
 
+message(STATUS "XCDAT_SOURCE_DIR is ${XCDAT_SOURCE_DIR}")
+
 option(XCDAT_X64
   "Use 64-bit integers for node representation."
   OFF)
@@ -40,10 +42,20 @@ include_directories(include)
 add_library(xcdat STATIC ${HEADER_FILES} ${SOURCE_FILES})
 
 add_subdirectory(tool)
+add_subdirectory(sample)
 
 enable_testing()
 add_subdirectory(test)
 
 install(FILES include/xcdat.hpp DESTINATION include)
 install(FILES ${HEADER_FILES} DESTINATION include/xcdat)
-install(TARGETS xcdat ARCHIVE DESTINATION lib)
+
+install(TARGETS xcdat
+  EXPORT xcdat-targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin)
+
+install(EXPORT xcdat-targets
+  FILE xcdat-config.cmake
+  DESTINATION lib/cmake/xcdat)
