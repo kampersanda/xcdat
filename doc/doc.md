@@ -262,10 +262,10 @@ As shown in the output, `xcdat::Trie` assigns unique integer IDs to each registe
 
 ## API
 
-You can build a dictionary using static member function `xcdat::TrieBuilder::build<bool>()`. 
-This function receives a set of keywords and returns the resulting class object of `xcdat::Trie<bool>`.
-For the usage, refer to the header comments of [xcdat::TrieBuilder.hpp](https://github.com/kampersanda/xcdat/blob/master/include/xcdat/TrieBuilder.hpp).
-Also for the usage of `xcdat::Trie`, refer to the header comments of [xcdat::Trie](https://github.com/kampersanda/xcdat/blob/master/include/xcdat/Trie.hpp).
+You can build a dictionary using static member function `xcdat::TrieBuilder::build()`. 
+This function receives a set of keywords and returns the resulting class object of `xcdat::Trie`.
+For the usage, refer to the header comments of [`xcdat::TrieBuilder.hpp`](https://github.com/kampersanda/xcdat/blob/master/include/xcdat/TrieBuilder.hpp).
+Also for the usage of `xcdat::Trie`, refer to the header comments of [`xcdat::Trie`](https://github.com/kampersanda/xcdat/blob/master/include/xcdat/Trie.hpp).
 
 The detailed descriptions of AIP are under construction...
 
