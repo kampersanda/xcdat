@@ -95,32 +95,35 @@ int build(std::vector<std::string>& args) {
   try {
     StopWatch sw;
     trie = TrieBuilder::build<Fast>(keys);
-    std::cout << "constr. time: " << sw.sec() << " sec" << std::endl;
+    std::cout << "constr. time:\t" << sw.sec() << " sec" << std::endl;
   } catch (const xcdat::TrieBuilder::Exception& ex) {
     std::cerr << ex.what() << std::endl;
     return 1;
   }
 
-  std::cout << "cmpr. ratio: "
+  std::cout << "cmpr. ratio:\t"
             << static_cast<double>(trie.size_in_bytes()) / raw_size
-            << std::endl;
+            << " over the raw size" << std::endl;
+
+  std::cout << std::endl;
   trie.show_stat(std::cout);
+  std::cout << std::endl;
 
-  {
-    std::string out_name;
-    if (args.size() == 4) {
-      out_name = args[3];
-    } else {
-      out_name = args[2] + (Fast ? ".fdac" : ".dac");
-    }
-
-    std::ofstream ofs{out_name};
-    if (!ofs) {
-      std::cerr << "open error : " << out_name << std::endl;
-      return 1;
-    }
-    trie.write(ofs);
+  std::string out_name;
+  if (args.size() == 4) {
+    out_name = args[3];
+  } else {
+    out_name = args[2] + (Fast ? ".fdac" : ".dac");
   }
+
+  std::ofstream ofs{out_name};
+  if (!ofs) {
+    std::cerr << "open error : " << out_name << std::endl;
+    return 1;
+  }
+  trie.write(ofs);
+
+  std::cout << "output -> " << out_name << std::endl;
 
   return 0;
 }
