@@ -8,7 +8,7 @@ Xcdat is a C++ library that implements static compressed string dictionaries bas
 
 The double array (Aoe, 1989) is known as the fastest trie representation and has been used in many trie libraries. On the other hand, it has a space efficiency problem because of a pointer-based data structure. Xcdat solves the problem using the XOR-compressed double-array methods described in the following article.
 
-> Shunsuke Kanda, Kazuhiro Morita, and Masao Fuketa. Compressed double-array tries for string dictionaries supporting fast lookup. Knowledge and Information Systems, 51(3): 1023–1042, 2017.
+> Shunsuke Kanda, Kazuhiro Morita, and Masao Fuketa. Compressed double-array tries for string dictionaries supporting fast lookup. Knowledge and Information Systems, 51(3): 1023–1042, 2017. [[doi](https://doi.org/10.1007/s10115-016-0999-8)] [[pdf](https://sites.google.com/site/shnskknd/KAIS2016.pdf)]
 
 Xcdat can implement trie dictionaries in smaller space compared to the other double-array libraries. In addition, the lookup speed is relatively fast in compressed data structures from the double-array advantage.
 
