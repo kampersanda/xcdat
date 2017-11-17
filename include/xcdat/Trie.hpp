@@ -2,6 +2,7 @@
 #define XCDAT_TRIE_HPP_
 
 #include <string_view>
+#include <xcdat/Trie.hpp>
 
 #include "Trie.hpp"
 #include "DacBc.hpp"
@@ -10,12 +11,12 @@
 namespace xcdat {
 
 // Compressed string dictionary using an improved double-array trie. There are
-// two versions of DACs representing BASE/CHECK arrays, selected with the Fast
-// parameter.
+// two versions of DACs to represent BASE/CHECK arrays in small space. The
+// versions can be chosen using the Fast parameter.
 template<bool Fast>
 class Trie {
 public:
-  using type = Trie<Fast>;
+  using trie_type = Trie<Fast>;
   using bc_type = typename std::conditional<Fast, FastDacBc, DacBc>::type;
 
   static constexpr auto NOT_FOUND = ID_MAX;
@@ -40,7 +41,7 @@ public:
   ~Trie() = default;
 
   // Lookups the ID of a given key. If the key is not registered, otherwise
-  // returns kNotFound.
+  // returns NOT_FOUND.
   id_type lookup(std::string_view key) const {
     size_t pos = 0;
     id_type node_id = 0;
@@ -66,8 +67,7 @@ public:
     return to_key_id_(node_id);
   }
 
-  // Decodes the key associated with a given ID. The decoded key is appended to
-  // 'ret' and its length is returned.
+  // Decodes the key associated with a given ID.
   std::string access(id_type id) const {
     if (num_keys_ <= id) {
       return {};
@@ -102,29 +102,29 @@ public:
     return dec;
   }
 
-  // Iterator class for enumerating the keys and IDs included as prefixes of a
-  // given key, that is, supporting so-called common prefix lookup. It is
-  // created by using make_prefix_iterator().
+  // Iterator for enumerating the keys and IDs included as prefixes of a given
+  // key, that is, supporting so-called common prefix lookup. It is created by
+  // using make_prefix_iterator().
   class PrefixIterator {
   public:
     PrefixIterator() = default;
 
-    // Scans the next key and ID
+    // Scans the next key. If it does not exist, returns false.
     bool next() {
       return trie_ != nullptr && trie_->next_prefix_(this);
     }
 
-    // Gets the key
+    // Gets the key.
     std::string_view key() const {
       return {key_.data(), pos_};
     };
-    // Gets the ID
+    // Gets the ID.
     id_type id() const {
       return id_;
     }
 
   private:
-    const type* trie_{};
+    const trie_type* trie_{};
     const std::string_view key_{};
 
     size_t pos_{0};
@@ -134,40 +134,40 @@ public:
     bool begin_flag_{true};
     bool end_flag_{false};
 
-    PrefixIterator(const type* trie, std::string_view key)
+    PrefixIterator(const trie_type* trie, std::string_view key)
       : trie_{trie}, key_{key} {}
 
     friend class Trie;
   };
 
-  // Makes PrefixIterator from a given key
+  // Makes PrefixIterator from a given key.
   PrefixIterator make_prefix_iterator(std::string_view key) const {
     return PrefixIterator{this, key};
   }
 
-  // Iterator class for enumerating the keys and IDs starting with prefixes of a
-  // given key, that is, supporting so-called predictive lookup. It is created
-  // by using make_predictive_iterator().
+  // Iterator class for enumerating the keys and IDs starting with prefixes of
+  // a given key, that is, supporting so-called predictive lookup. It is in
+  // lexicographical order. It is created by using make_predictive_iterator().
   class PredictiveIterator {
   public:
     PredictiveIterator() = default;
 
-    // Scans the next key and ID
+    // Scans the next key. If it does not exist, returns false.
     bool next() {
       return trie_ != nullptr && trie_->next_predictive_(this);
     }
 
-    // Gets the key
+    // Gets the key.
     std::string_view key() const {
       return {buf_.data(), buf_.size()};
     };
-    // Gets the ID
+    // Gets the ID.
     id_type id() const {
       return id_;
     }
 
   private:
-    const type* trie_{};
+    const trie_type* trie_{};
     const std::string_view key_{};
 
     bool begin_flag_{true};
@@ -183,14 +183,15 @@ public:
     std::string buf_{};
     id_type id_{};
 
-    PredictiveIterator(const type* trie, std::string_view key)
+    PredictiveIterator(const trie_type* trie, std::string_view key)
       : trie_{trie}, key_{key} {
-      buf_.reserve(trie->max_length());
+      buf_.reserve(trie->max_length_);
     }
 
     friend class Trie;
   };
 
+  // Makes PredictiveIterator from a given key.
   PredictiveIterator make_predictive_iterator(std::string_view key) const {
     return {this, key};
   }
@@ -200,12 +201,7 @@ public:
     return num_keys_;
   }
 
-  // Gets the maximum length of registered keys
-  size_t max_length() const {
-    return max_length_;
-  }
-
-  // Gets the binary mode
+  // Gets whether a binary mode or not.
   bool bin_mode() const {
     return bin_mode_;
   }
@@ -248,14 +244,16 @@ public:
   // Reports the dictionary statistics into an ostream.
   void show_stat(std::ostream& os) const {
     const auto total_size = size_in_bytes();
-    os << "basic statistics of xcdat::Trie" << std::endl;
+    os << "basic statistics of xcdat::Trie<"
+       << (Fast ? "true" : "false") << ">" << std::endl;
     show_size("\tnum keys:      ", num_keys(), os);
     show_size("\talphabet size: ", alphabet_size(), os);
     show_size("\tnum nodes:     ", num_nodes(), os);
     show_size("\tnum used nodes:", num_used_nodes(), os);
     show_size("\tnum free nodes:", num_free_nodes(), os);
     show_size("\tsize in bytes: ", size_in_bytes(), os);
-    os << "member size statistics of xcdat::Trie" << std::endl;
+    os << "member size statistics of xcdat::Trie<"
+       << (Fast ? "true" : "false") << ">" << std::endl;
     show_size_ratio("\tbc:            ", bc_.size_in_bytes(), total_size, os);
     show_size_ratio("\tterminal_flags:", terminal_flags_.size_in_bytes(),
                     total_size, os);
@@ -278,11 +276,11 @@ public:
     write_value(bin_mode_, os);
   }
 
+  // Swap
   void swap(Trie& rhs) {
     std::swap(*this, rhs);
   }
 
-  // Disallows copy and assignment.
   Trie(const Trie&) = delete;
   Trie& operator=(const Trie&) = delete;
 

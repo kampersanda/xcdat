@@ -8,11 +8,6 @@ namespace xcdat {
 // Double-array trie builder.
 class TrieBuilder {
 public:
-  // To avoid undefined traversal
-  static constexpr id_type TABOO_ID = 1;
-  // From darts-clone setting
-  static constexpr id_type FREE_BLOCKS = 16;
-
   // Builds the dictionary from given string keys. The keys must be sorted in
   // lexicographical order without duplication. Any error in construction is
   // reported by TrieBuilder::Exception. If the keys include the ASCII zero
@@ -75,6 +70,11 @@ private:
       return std::make_reverse_iterator(str.data());
     }
   };
+
+  // To avoid undefined traversal
+  static constexpr id_type TABOO_ID = 1;
+  // From darts-clone setting
+  static constexpr id_type FREE_BLOCKS = 16;
 
   const std::vector<std::string_view>& keys_;
   const id_type block_size_;
