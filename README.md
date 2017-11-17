@@ -10,7 +10,7 @@ Xcdat can implement trie dictionaries in smaller space compared to the other dou
 
 ## Documentation
 
-The document of Xcdat is [here](http://kampersanda.github.io/xcdat/doc/doc.html).
+The document of Xcdat is [here](https://kampersanda.github.io/xcdat/).
 
 ## Build Instructions
 
