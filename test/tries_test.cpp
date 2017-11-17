@@ -216,7 +216,6 @@ void test_io(const Trie<Fast>& trie) {
   }
 
   assert(trie.num_keys() == _trie.num_keys());
-  assert(trie.max_length() == _trie.max_length());
   assert(trie.bin_mode() == _trie.bin_mode());
   assert(trie.alphabet_size() == _trie.alphabet_size());
   assert(trie.num_nodes() == _trie.num_nodes());
