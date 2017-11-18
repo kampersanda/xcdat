@@ -36,7 +36,7 @@ message(STATUS "XCDAT_X64 is ${XCDAT_X64}")
 message(STATUS "XCDAT_USE_POPCNT is ${XCDAT_USE_POPCNT}")
 
 file(GLOB HEADER_FILES include/xcdat/*.hpp)
-file(GLOB SOURCE_FILES lib/*.cpp)
+file(GLOB SOURCE_FILES src/*.cpp)
 
 include_directories(include)
 add_library(xcdat STATIC ${HEADER_FILES} ${SOURCE_FILES})
