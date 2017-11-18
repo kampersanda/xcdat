@@ -1,7 +1,3 @@
-//
-// Created by Kampersanda on 2017/01/28.
-//
-
 #ifndef XCDAT_VECTOR_HPP
 #define XCDAT_VECTOR_HPP
 

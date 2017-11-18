@@ -1,17 +1,6 @@
-//
-// Created by Shunsuke Kanda on 2017/11/10.
-//
-
-#ifndef XCDAT_XCDAT_HPP
-#define XCDAT_XCDAT_HPP
+#ifndef XCDAT_XCDAT_HPP_
+#define XCDAT_XCDAT_HPP_
 
 #include "xcdat/TrieBuilder.hpp"
 
-namespace xcdat {
-
-
-
-}
-
-
-#endif //XCDAT_XCDAT_HPP
+#endif //XCDAT_XCDAT_HPP_
