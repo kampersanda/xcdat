@@ -47,6 +47,10 @@ a {
     text-decoration:none;
 }
 
+a:hover {
+    text-decoration: underline; 
+}
+
 b, strong {
     font-weight: 600;
     background: linear-gradient(transparent 75%, #a7d6ff 70%);
