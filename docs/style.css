@@ -135,14 +135,14 @@ p code {
 }
 
 pre {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding: 1em;
     overflow: auto;
     white-space: pre;
 }
 
 pre.sourceCode {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding: 1em;
     overflow: auto;
     white-space: pre;
