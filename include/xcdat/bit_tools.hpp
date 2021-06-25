@@ -3,8 +3,13 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include <immintrin.h>
+#ifdef __SSE4_2__
 #include <nmmintrin.h>
+#endif
+
+#ifdef __BMI2__
+#include <immintrin.h>
+#endif
 
 // From https://github.com/ot/succinct
 namespace xcdat::bit_tools {
@@ -28,8 +33,37 @@ inline std::uint64_t popcount(std::uint64_t x) {
 #endif
 }
 
+static constexpr std::uint8_t debruijn64_mapping[64] = {
+    63, 0,  58, 1,  59, 47, 53, 2,  60, 39, 48, 27, 54, 33, 42, 3,  61, 51, 37, 40, 49, 18,
+    28, 20, 55, 30, 34, 11, 43, 14, 22, 4,  62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19,
+    29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5,
+};
+
+static constexpr std::uint64_t debruijn64 = 0x07EDD5E59A4E28C2ULL;
+
+// return the position of the single bit set in the word x
+inline std::uint8_t bit_position(std::uint64_t x) {
+    return debruijn64_mapping[(x * debruijn64) >> 58];
+}
+
 inline std::uint64_t msb(std::uint64_t x) {
+#ifdef __SSE4_2__
     return x == 0 ? 0 : 63 - __builtin_clzll(x);
+#else
+    if (x == 0) {
+        return 0;
+    }
+    // right-saturate the word
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x |= x >> 32;
+    // isolate the MSB
+    x ^= x >> 1;
+    return bit_position(x);
+#endif
 }
 
 inline std::uint64_t uleq_step_9(std::uint64_t x, std::uint64_t y) {

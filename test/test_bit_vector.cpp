@@ -7,10 +7,12 @@
 
 #include "doctest/doctest.h"
 
-std::vector<bool> generate_random_bits(std::uint64_t n) {
+std::vector<bool> make_random_bits(std::uint64_t n) {
     static constexpr std::uint64_t seed = 13;
+
     std::vector<bool> bits;
-    std::mt19937 engine(seed);
+    std::mt19937_64 engine(seed);
+
     for (std::uint64_t i = 0; i < n; i++) {
         bits.push_back(engine() & 1);
     }
@@ -31,16 +33,15 @@ std::uint64_t select_naive(const std::vector<bool>& bits, std::uint64_t n) {
         if (bits[i]) {
             if (n == 0) {
                 break;
-            } else {
-                n -= 1;
             }
+            n -= 1;
         }
     }
     return i;
 }
 
 TEST_CASE("Test bit_vector::builder with resize") {
-    const auto bits = generate_random_bits(10000);
+    const auto bits = make_random_bits(10000);
 
     xcdat::bit_vector::builder b;
     b.resize(bits.size());
@@ -56,7 +57,7 @@ TEST_CASE("Test bit_vector::builder with resize") {
 }
 
 TEST_CASE("Test bit_vector::builder with push_back") {
-    const auto bits = generate_random_bits(10000);
+    const auto bits = make_random_bits(10000);
 
     xcdat::bit_vector::builder b;
     b.reserve(bits.size());
@@ -73,7 +74,7 @@ TEST_CASE("Test bit_vector::builder with push_back") {
 }
 
 TEST_CASE("Test bit_vector") {
-    const auto bits = generate_random_bits(10000);
+    const auto bits = make_random_bits(10000);
 
     xcdat::bit_vector bv;
     {
@@ -93,6 +94,7 @@ TEST_CASE("Test bit_vector") {
 
     static constexpr std::uint64_t seed = 17;
     std::mt19937_64 engine(seed);
+
     {
         std::uniform_int_distribution<std::uint64_t> dist(0, bv.size());
         for (std::uint64_t r = 0; r < 100; r++) {

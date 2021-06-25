@@ -8,7 +8,7 @@ namespace xcdat::utils {
 
 template <std::uint64_t N>
 constexpr std::tuple<std::uint64_t, std::uint64_t> decompose(std::uint64_t x) {
-    return std::make_tuple(x / N, x % N);
+    return {x / N, x % N};
 }
 
 template <class T = std::uint64_t>
