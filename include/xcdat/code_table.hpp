@@ -13,7 +13,7 @@ class code_table {
     std::array<std::uint8_t, 512> m_table;
     mm_vector<std::uint8_t> m_alphabet;
 
-    struct cf_type {
+    struct counter_type {
         std::uint8_t ch;
         std::uint64_t freq;
     };
@@ -23,8 +23,9 @@ class code_table {
 
     virtual ~code_table() = default;
 
-    void build(const std::vector<std::string_view>& keys) {
-        std::array<cf_type, 256> counter;
+    template <class Keys>
+    void build(const Keys& keys) {
+        std::array<counter_type, 256> counter;
         for (std::uint32_t ch = 0; ch < 256; ++ch) {
             counter[ch] = {static_cast<std::uint8_t>(ch), 0};
         }
@@ -47,7 +48,8 @@ class code_table {
             m_alphabet.steal(alphabet);
         }
 
-        std::sort(counter.begin(), counter.end(), [](const cf_type& a, const cf_type& b) { return a.freq > b.freq; });
+        std::sort(counter.begin(), counter.end(),
+                  [](const counter_type& a, const counter_type& b) { return a.freq > b.freq; });
 
         for (std::uint32_t ch = 0; ch < 256; ++ch) {
             m_table[counter[ch].ch] = static_cast<std::uint8_t>(ch);
@@ -71,6 +73,10 @@ class code_table {
 
     inline char get_char(std::uint8_t cd) const {
         return static_cast<char>(m_table[cd + 256]);
+    }
+
+    inline bool has_null() {
+        return *m_alphabet.begin() == '\0';
     }
 
     inline auto begin() const {

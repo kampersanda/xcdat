@@ -2,38 +2,40 @@
 
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "bit_vector.hpp"
+#include "exception.hpp"
 #include "mm_vector.hpp"
 
 namespace xcdat {
 
 //! TAIL implementation with suffix merge
-class shared_tail {
+class tail_vector {
   public:
     struct suffix_type {
         std::string_view str;
         std::uint64_t npos;
 
         inline char operator[](std::uint64_t i) const {
-            return str[length() - i - 1];
+            return str[size() - i - 1];
         }
-        inline std::uint64_t length() const {
-            return str.length();
+        inline std::uint64_t size() const {
+            return str.size();
         }
 
         inline const char* begin() const {
             return str.data();
         }
         inline const char* end() const {
-            return str.data() + str.length();
+            return str.data() + str.size();
         }
 
         inline std::reverse_iterator<const char*> rbegin() const {
-            return std::make_reverse_iterator(str.data() + str.length());
+            return std::make_reverse_iterator(str.data() + str.size());
         }
         inline std::reverse_iterator<const char*> rend() const {
             return std::make_reverse_iterator(str.data());
@@ -54,7 +56,9 @@ class shared_tail {
 
         virtual ~builder() = default;
 
+        //!
         void set_suffix(std::string_view str, std::uint64_t npos) {
+            XCDAT_THROW_IF(str.size() == 0, "The given suffix is empty.");
             m_suffixes.push_back({str, npos});
         }
 
@@ -64,7 +68,7 @@ class shared_tail {
                 return std::lexicographical_compare(std::rbegin(a), std::rend(a), std::rbegin(b), std::rend(b));
             });
 
-            // Sentinel for an empty suffix
+            // Dummy for an empty suffix
             m_chars.emplace_back('\0');
             if (bin_mode) {
                 m_term_flags.push_back(false);
@@ -77,25 +81,23 @@ class shared_tail {
 
             for (std::uint64_t i = m_suffixes.size(); i > 0; --i) {
                 const suffix_type& curr_suffix = m_suffixes[i - 1];
-                if (curr_suffix.length() == 0) {
-                    // throw TrieBuilder::Exception("A suffix is empty.");
-                }
+                XCDAT_THROW_IF(curr_suffix.size() == 0, "A suffix is empty.");
 
                 std::uint64_t match = 0;
-                while ((match < curr_suffix.length()) && (match < prev_suffix->length()) &&
+                while ((match < curr_suffix.size()) && (match < prev_suffix->size()) &&
                        ((*prev_suffix)[match] == curr_suffix[match])) {
                     ++match;
                 }
 
-                if ((match == curr_suffix.length()) && (prev_suffix->length() != 0)) {  // sharable
-                    setter(curr_suffix.npos, prev_tpos + (prev_suffix->length() - match));
-                    prev_tpos += prev_suffix->length() - match;
+                if ((match == curr_suffix.size()) && (prev_suffix->size() != 0)) {  // sharable
+                    setter(curr_suffix.npos, prev_tpos + (prev_suffix->size() - match));
+                    prev_tpos += prev_suffix->size() - match;
                 } else {  // append
                     setter(curr_suffix.npos, m_chars.size());
                     prev_tpos = m_chars.size();
                     std::copy(curr_suffix.begin(), curr_suffix.end(), std::back_inserter(m_chars));
                     if (bin_mode) {
-                        for (std::uint64_t j = 1; j < curr_suffix.length(); ++j) {
+                        for (std::uint64_t j = 1; j < curr_suffix.size(); ++j) {
                             m_term_flags.push_back(false);
                         }
                         m_term_flags.push_back(true);
@@ -108,7 +110,7 @@ class shared_tail {
             }
         }
 
-        friend class shared_tail;
+        friend class tail_vector;
     };
 
   private:
@@ -116,31 +118,64 @@ class shared_tail {
     bit_vector m_term_flags;
 
   public:
-    shared_tail() = default;
+    tail_vector() = default;
 
-    explicit shared_tail(builder& b) {
+    explicit tail_vector(builder& b) {
         m_chars.steal(b.m_chars);
         m_term_flags.build(b.m_term_flags);
     }
 
-    ~shared_tail() = default;
+    ~tail_vector() = default;
 
     inline bool bin_mode() const {
-        return m_term_flags.size() == 0;
+        return m_term_flags.size() != 0;
     }
 
-    inline bool match(std::string_view key, size_t tpos) const {}
+    inline bool match(std::string_view key, size_t tpos) const {
+        if (key.size() == 0) {
+            return tpos == 0;
+        }
 
-    inline void decode(std::string& decoded, size_t tpos) const {
+        std::uint64_t kpos = 0;
+
         if (bin_mode()) {
             do {
-                decoded.push_back(m_chars[tpos]);
+                if (key[kpos] != m_chars[tpos]) {
+                    return false;
+                }
+                kpos += 1;
+                if (m_term_flags[tpos]) {
+                    return kpos == key.size();
+                }
+                tpos += 1;
+            } while (kpos < key.size());
+            return false;
+        } else {
+            do {
+                if (!m_chars[tpos] || key[kpos] != m_chars[tpos]) {
+                    return false;
+                }
+                kpos += 1;
+                tpos += 1;
+            } while (kpos < key.size());
+            return !m_chars[tpos];
+        }
+    }
+
+    inline void decode(size_t tpos, const std::function<void(char)>& fn) const {
+        if (bin_mode()) {
+            do {
+                fn(m_chars[tpos]);
             } while (!m_term_flags[tpos++]);
         } else {
             do {
-                decoded.push_back(m_chars[tpos++]);
+                fn(m_chars[tpos++]);
             } while (m_chars[tpos]);
         }
+    }
+
+    inline std::uint64_t size() const {
+        return m_chars.size();
     }
 };
 

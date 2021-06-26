@@ -1,7 +1,10 @@
 #pragma once
 
+#include "exception.hpp"
 #include "mm_vector.hpp"
 #include "utils.hpp"
+
+#include <iostream>
 
 namespace xcdat {
 
@@ -24,10 +27,12 @@ class compact_vector {
 
     template <class Vec>
     void build(const Vec& vec) {
+        XCDAT_THROW_IF(vec.size() == 0, "Error: The input vector is empty.");
+
         const std::uint64_t maxv = *std::max_element(vec.begin(), vec.end());
 
         m_size = vec.size();
-        m_bits = utils::bits_for_int(maxv);
+        m_bits = utils::needed_bits(maxv);
         m_mask = (1ULL << m_bits) - 1;
 
         std::vector<std::uint64_t> chunks(utils::words_for_bits(m_size * m_bits));

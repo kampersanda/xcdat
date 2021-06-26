@@ -14,8 +14,8 @@ class bit_vector {
   public:
     class builder {
       private:
-        std::vector<std::uint64_t> m_bits;
         std::uint64_t m_size = 0;
+        std::vector<std::uint64_t> m_bits;
 
       public:
         builder() = default;
@@ -66,11 +66,11 @@ class bit_vector {
     static constexpr std::uint64_t selects_per_hint = 64 * block_size * 2;
 
   private:
+    std::uint64_t m_size = 0;
+    std::uint64_t m_num_ones = 0;
     mm_vector<std::uint64_t> m_bits;
     mm_vector<std::uint64_t> m_rank_hints;
     mm_vector<std::uint64_t> m_select_hints;
-    std::uint64_t m_size = 0;
-    std::uint64_t m_num_ones = 0;
 
   public:
     bit_vector() = default;
@@ -82,15 +82,16 @@ class bit_vector {
     virtual ~bit_vector() = default;
 
     void reset() {
+        m_size = 0;
+        m_num_ones = 0;
         m_bits.reset();
         m_rank_hints.reset();
         m_select_hints.reset();
-        m_size = 0;
-        m_num_ones = 0;
     }
 
     void build(builder& b, bool enable_rank = false, bool enable_select = false) {
         reset();
+
         m_bits.steal(b.m_bits);
         m_size = b.m_size;
         m_num_ones = std::accumulate(m_bits.begin(), m_bits.end(), 0ULL,
@@ -117,6 +118,9 @@ class bit_vector {
 
     // The number of 1s in B[0..i)
     inline std::uint64_t rank(std::uint64_t i) const {
+        assert(i <= size());
+        assert(m_rank_hints.size() != 0);
+
         if (i == size()) {
             return num_ones();
         }
@@ -126,6 +130,9 @@ class bit_vector {
 
     // The largest position
     inline std::uint64_t select(std::uint64_t n) const {
+        assert(n < num_ones());
+        assert(m_select_hints.size() != 0);
+
         const std::uint64_t bi = select_for_block(n);
         assert(bi < num_blocks());
 

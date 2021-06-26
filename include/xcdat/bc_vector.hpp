@@ -7,7 +7,7 @@
 
 namespace xcdat {
 
-class dac_bc {
+class bc_vector {
   public:
     static constexpr std::uint32_t l1_bits = 8;
     static constexpr std::uint32_t max_levels = sizeof(std::uint64_t);
@@ -21,10 +21,14 @@ class dac_bc {
     bit_vector m_leaf_flags;
 
   public:
-    dac_bc() = default;
+    bc_vector() = default;
 
     template <class BcUnit>
-    dac_bc(const std::vector<BcUnit>& bc_units, bit_vector::builder&& leaf_flags) {
+    bc_vector(const std::vector<BcUnit>& bc_units, bit_vector::builder& leaf_flags)
+        : bc_vector(bc_units, std::move(leaf_flags)) {}
+
+    template <class BcUnit>
+    bc_vector(const std::vector<BcUnit>& bc_units, bit_vector::builder&& leaf_flags) {
         std::array<std::vector<std::uint8_t>, max_levels> bytes;
         std::array<bit_vector::builder, max_levels - 1> next_flags;
         std::vector<std::uint64_t> links;
@@ -78,7 +82,7 @@ class dac_bc {
         m_leaf_flags.build(leaf_flags, true, false);
     }
 
-    virtual ~dac_bc() = default;
+    virtual ~bc_vector() = default;
 
     inline std::uint64_t base(std::uint64_t i) const {
         return access(i * 2) ^ i;

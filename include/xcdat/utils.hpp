@@ -17,8 +17,9 @@ constexpr std::uint64_t words_for_bits(std::uint64_t nbits) {
     return (nbits + wbits - 1) / wbits;
 }
 
-inline std::uint64_t bits_for_int(std::uint64_t x) {
-    return (x > 1) ? bit_tools::msb(x - 1) + 1 : 0;
+//! Get the number of needed bits for representing integer x
+inline std::uint64_t needed_bits(std::uint64_t x) {
+    return bit_tools::msb(x) + 1;
 }
 
 }  // namespace xcdat::utils

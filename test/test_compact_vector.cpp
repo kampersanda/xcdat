@@ -3,21 +3,19 @@
 #include <algorithm>
 #include <random>
 
-#include <xcdat/compact_vector.hpp>
-
 #include "doctest/doctest.h"
+#include "test_common.hpp"
+#include "xcdat/compact_vector.hpp"
 
-std::vector<std::uint64_t> make_random_ints(std::uint64_t n) {
-    static constexpr std::uint64_t seed = 13;
+TEST_CASE("Test xcdat::compact_vector (zero)") {
+    std::vector<std::uint64_t> ints = {0, 0, 0, 0, 0};
+    xcdat::compact_vector cv(ints);
 
-    std::mt19937_64 engine(seed);
-    std::uniform_int_distribution<std::uint64_t> dist(0, UINT16_MAX);
+    REQUIRE_EQ(cv.size(), ints.size());
 
-    std::vector<std::uint64_t> ints(n);
-    for (std::uint64_t i = 0; i < n; i++) {
-        ints[i] = dist(engine);
+    for (std::uint64_t i = 0; i < ints.size(); i++) {
+        REQUIRE_EQ(cv[i], ints[i]);
     }
-    return ints;
 }
 
 TEST_CASE("Test xcdat::compact_vector (tiny)") {
@@ -32,7 +30,7 @@ TEST_CASE("Test xcdat::compact_vector (tiny)") {
 }
 
 TEST_CASE("Test xcdat::compact_vector (random)") {
-    std::vector<std::uint64_t> ints = make_random_ints(10000);
+    std::vector<std::uint64_t> ints = xcdat::test::make_random_ints(10000, 0, UINT16_MAX);
     xcdat::compact_vector cv(ints);
 
     REQUIRE_EQ(cv.size(), ints.size());

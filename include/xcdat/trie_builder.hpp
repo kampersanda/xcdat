@@ -1,11 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 #include <string_view>
 
+#include "bc_vector.hpp"
 #include "code_table.hpp"
-#include "dac_bc.hpp"
-#include "shared_tail.hpp"
+#include "exception.hpp"
+#include "tail_vector.hpp"
 
 namespace xcdat {
 
@@ -20,7 +22,7 @@ class trie_builder {
     static constexpr std::uint64_t taboo_npos = 1;
     static constexpr std::uint64_t free_blocks = 16;
 
-    const std::vector<std::string_view>& m_keys;
+    const std::vector<std::string>& m_keys;
     const std::uint32_t m_l1_bits;  // # of bits for L1 layer of DACs
     const std::uint64_t m_l1_size;
 
@@ -28,19 +30,17 @@ class trie_builder {
 
     code_table m_table;
     std::vector<unit_type> m_units;
-    bit_vector::builder m_leaf_flags;
-    bit_vector::builder m_term_flags;
-    bit_vector::builder m_used_flags;
+    bit_vector::builder m_leaves;
+    bit_vector::builder m_terms;
+    bit_vector::builder m_useds;
     std::vector<std::uint64_t> m_heads;  // for L1 blocks
     std::vector<std::uint8_t> m_edges;
-    shared_tail::builder m_suffixes;
+    tail_vector::builder m_suffixes;
 
   public:
-    trie_builder(const std::vector<std::string_view>& keys, std::uint32_t l1_bits, bool bin_mode)
+    trie_builder(const std::vector<std::string>& keys, std::uint32_t l1_bits, bool bin_mode)
         : m_keys(keys), m_l1_bits(l1_bits), m_l1_size(1ULL << l1_bits), m_bin_mode(bin_mode) {
-        if (m_keys.empty()) {
-            // throw TrieBuilder::Exception("The input data is empty.");
-        }
+        XCDAT_THROW_IF(m_keys.size() == 0, "The input dataset is empty.");
 
         // Reserve
         {
@@ -49,9 +49,9 @@ class trie_builder {
                 init_capa <<= 1;
             }
             m_units.reserve(init_capa);
-            m_leaf_flags.reserve(init_capa);
-            m_term_flags.reserve(init_capa);
-            m_used_flags.reserve(init_capa);
+            m_leaves.reserve(init_capa);
+            m_terms.reserve(init_capa);
+            m_useds.reserve(init_capa);
             m_heads.reserve(init_capa >> m_l1_bits);
             m_edges.reserve(256);
         }
@@ -59,9 +59,9 @@ class trie_builder {
         // Initialize an empty list.
         for (std::uint64_t npos = 0; npos < 256; ++npos) {
             m_units.push_back(unit_type{npos + 1, npos - 1});
-            m_leaf_flags.push_back(false);
-            m_term_flags.push_back(false);
-            m_used_flags.push_back(false);
+            m_leaves.push_back(false);
+            m_terms.push_back(false);
+            m_useds.push_back(false);
         }
         m_units[255].base = 0;
         m_units[0].check = 255;
@@ -73,16 +73,17 @@ class trie_builder {
         // Fix the root
         use_unit(0);
         m_units[0].check = taboo_npos;
-        m_used_flags.set_bit(taboo_npos, true);
+        m_useds.set_bit(taboo_npos, true);
         m_heads[taboo_npos >> m_l1_bits] = m_units[taboo_npos].base;
 
         // Build the code table
         m_table.build(keys);
-        m_bin_mode |= (*m_table.begin() == '\0');
+        m_bin_mode |= m_table.has_null();
 
         // Build the BC unites
         arrange(0, m_keys.size(), 0, 0);
 
+        // Build
         m_suffixes.complete(m_bin_mode, [&](std::uint64_t npos, std::uint64_t tpos) { m_units[npos].base = tpos; });
     }
 
@@ -90,7 +91,7 @@ class trie_builder {
 
   private:
     inline void use_unit(std::uint64_t npos) {
-        m_used_flags.set_bit(npos);
+        m_useds.set_bit(npos);
 
         const auto next = m_units[npos].base;
         const auto prev = m_units[npos].check;
@@ -108,9 +109,9 @@ class trie_builder {
         const auto end_npos = beg_npos + 256;
 
         for (auto npos = beg_npos; npos < end_npos; ++npos) {
-            if (!m_used_flags[npos]) {
+            if (!m_useds[npos]) {
                 use_unit(npos);
-                m_used_flags.set_bit(npos, false);
+                m_useds.set_bit(npos, false);
                 m_units[npos].base = npos;
                 m_units[npos].check = npos;
             }
@@ -127,9 +128,9 @@ class trie_builder {
 
         for (auto npos = old_size; npos < new_size; ++npos) {
             m_units.push_back({npos + 1, npos - 1});
-            m_leaf_flags.push_back(false);
-            m_term_flags.push_back(false);
-            m_used_flags.push_back(false);
+            m_leaves.push_back(false);
+            m_terms.push_back(false);
+            m_useds.push_back(false);
         }
 
         {
@@ -151,17 +152,18 @@ class trie_builder {
     }
 
     void arrange(std::uint64_t beg, std::uint64_t end, std::uint64_t depth, std::uint64_t npos) {
-        if (m_keys[beg].length() == depth) {
-            m_term_flags.set_bit(npos, true);
+        if (m_keys[beg].size() == depth) {
+            m_terms.set_bit(npos, true);
             if (++beg == end) {  // without link?
                 m_units[npos].base = 0;  // with an empty suffix
-                m_leaf_flags.set_bit(npos, true);
+                m_leaves.set_bit(npos, true);
                 return;
             }
         } else if (beg + 1 == end) {  // leaf?
-            m_term_flags.set_bit(npos, true);
-            m_leaf_flags.set_bit(npos, true);
-            m_suffixes.set_suffix({m_keys[beg].data() + depth, m_keys[beg].length() - depth}, npos);
+            XCDAT_THROW_IF(m_keys[beg].size() <= depth, "The input keys are not unique.");
+            m_terms.set_bit(npos, true);
+            m_leaves.set_bit(npos, true);
+            m_suffixes.set_suffix({m_keys[beg].data() + depth, m_keys[beg].size() - depth}, npos);
             return;
         }
 
@@ -172,9 +174,7 @@ class trie_builder {
             for (auto i = beg + 1; i < end; ++i) {
                 const auto next_ch = static_cast<std::uint8_t>(m_keys[i][depth]);
                 if (ch != next_ch) {
-                    if (next_ch < ch) {
-                        // throw TrieBuilder::Exception("The input data is not in lexicographical order.");
-                    }
+                    XCDAT_THROW_IF(next_ch < ch, "The input keys are not in lexicographical order.");
                     m_edges.push_back(ch);
                     ch = next_ch;
                 }
@@ -214,7 +214,7 @@ class trie_builder {
             return m_units.size() ^ m_table.get_code(m_edges[0]);
         }
 
-        // search in the same L1 block
+        // First, search in the same L1 block
         for (auto i = m_heads[lpos]; i != taboo_npos && i >> m_l1_bits == lpos; i = m_units[i].base) {
             const auto base = i ^ m_table.get_code(m_edges[0]);
             if (is_target(base)) {
@@ -222,6 +222,7 @@ class trie_builder {
             }
         }
 
+        // Second, search in the other blocks
         for (auto i = m_units[taboo_npos].base; i != taboo_npos; i = m_units[i].base) {
             const auto base = i ^ m_table.get_code(m_edges[0]);
             if (is_target(base)) {
@@ -233,7 +234,7 @@ class trie_builder {
 
     inline bool is_target(std::uint64_t base) const {
         for (const auto ch : m_edges) {
-            if (m_used_flags[base ^ m_table.get_code(ch)]) {
+            if (m_useds[base ^ m_table.get_code(ch)]) {
                 return false;
             }
         }

@@ -1,29 +1,29 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <string>
 
-#include "dac_bc.hpp"
+#include "bc_vector.hpp"
 #include "trie_builder.hpp"
 
 namespace xcdat {
 
 class trie {
-  public:
   private:
     std::uint64_t m_num_keys = 0;
     code_table m_table;
-    dac_bc m_bc;
-    bit_vector m_term_flags;
-    shared_tail m_tail;
+    bit_vector m_terms;
+    bc_vector m_bcvec;
+    tail_vector m_tvec;
 
   public:
     trie() = default;
 
     virtual ~trie() = default;
 
-    static trie build(const std::vector<std::string_view>& keys, bool bin_mode = false) {
-        trie_builder b(keys, 8, bin_mode);
+    static trie build(const std::vector<std::string>& keys, bool bin_mode = false) {
+        trie_builder b(keys, bc_vector::l1_bits, bin_mode);
         return trie(b);
     }
 
@@ -32,7 +32,7 @@ class trie {
     }
 
     inline bool bin_mode() const {
-        return m_tail.bin_mode();
+        return m_tvec.bin_mode();
     }
 
     inline std::uint64_t alphabet_size() const {
@@ -45,21 +45,22 @@ class trie {
 
     inline std::optional<std::uint64_t> lookup(std::string_view key) const {
         std::uint64_t kpos = 0, npos = 0;
-        while (!m_bc.is_leaf(npos)) {
-            if (kpos == key.length()) {
-                if (m_term_flags[npos]) {
-                    return npos_to_id(npos);
+        while (!m_bcvec.is_leaf(npos)) {
+            if (kpos == key.size()) {
+                if (!m_terms[npos]) {
+                    return std::nullopt;
                 }
-                return std::nullopt;
+                return npos_to_id(npos);
             }
-            const auto cpos = m_bc.base(npos) ^ m_table.get_code(key[kpos++]);
-            if (m_bc.check(cpos) != npos) {
+            const auto cpos = m_bcvec.base(npos) ^ m_table.get_code(key[kpos++]);
+            if (m_bcvec.check(cpos) != npos) {
                 return std::nullopt;
             }
             npos = cpos;
         }
-        const std::uint64_t tpos = m_bc.link(npos);
-        if (!m_tail.match(key.substr(kpos, key.length() - kpos), tpos)) {
+
+        const std::uint64_t tpos = m_bcvec.link(npos);
+        if (!m_tvec.match(key.substr(kpos, key.size() - kpos), tpos)) {
             return std::nullopt;
         }
         return npos_to_id(npos);
@@ -74,33 +75,33 @@ class trie {
         decoded.reserve(max_length());
 
         auto npos = id_to_npos(id);
-        auto tpos = m_bc.is_leaf(npos) ? m_bc.link(npos) : UINT64_MAX;
+        auto tpos = m_bcvec.is_leaf(npos) ? m_bcvec.link(npos) : UINT64_MAX;
 
         while (npos != 0) {
-            const auto ppos = m_bc.check(npos);
-            decoded.push_back(m_table.get_char(m_bc.base(ppos) ^ npos));
+            const auto ppos = m_bcvec.check(npos);
+            decoded.push_back(m_table.get_char(m_bcvec.base(ppos) ^ npos));
             npos = ppos;
         }
 
         std::reverse(decoded.begin(), decoded.end());
 
         if (tpos != 0 && tpos != UINT64_MAX) {
-            m_tail.decode(decoded, tpos);
+            m_tvec.decode(tpos, [&](char c) { decoded.push_back(c); });
         }
         return decoded;
     }
 
   private:
     trie(trie_builder& b)
-        : m_num_keys(b.m_keys.size()), m_table(b.m_table), m_bc(b.m_units, b.m_leaf_flags),
-          m_term_flags(b.m_term_flags, true, true), m_tail(b.m_suffixes) {}
+        : m_num_keys(b.m_keys.size()), m_table(b.m_table), m_terms(b.m_terms, true, true),
+          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(b.m_suffixes) {}
 
     inline std::uint64_t npos_to_id(std::uint64_t npos) const {
-        return m_term_flags.rank(npos);
+        return m_terms.rank(npos);
     };
 
     inline std::uint64_t id_to_npos(std::uint64_t id) const {
-        return m_term_flags.select(id);
+        return m_terms.select(id);
     };
 };
 
