@@ -41,6 +41,14 @@ class mm_vector {
         return m_vec.end();
     }
 
+    inline auto rbegin() const {
+        return m_vec.rbegin();
+    }
+
+    inline auto rend() const {
+        return m_vec.rend();
+    }
+
     inline const T& operator[](std::uint64_t i) const {
         return m_vec[i];
     }

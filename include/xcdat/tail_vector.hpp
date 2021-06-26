@@ -131,7 +131,7 @@ class tail_vector {
         return m_term_flags.size() != 0;
     }
 
-    inline bool match(std::string_view key, size_t tpos) const {
+    inline bool match(std::string_view key, std::uint64_t tpos) const {
         if (key.size() == 0) {
             return tpos == 0;
         }
@@ -162,7 +162,38 @@ class tail_vector {
         }
     }
 
-    inline void decode(size_t tpos, const std::function<void(char)>& fn) const {
+    inline bool prefix_match(std::string_view key, std::uint64_t& tpos) const {
+        if (key.size() == 0) {
+            return true;
+        }
+
+        std::uint64_t kpos = 0;
+
+        if (bin_mode()) {
+            do {
+                if (key[kpos] != m_chars[tpos]) {
+                    return false;
+                }
+                kpos += 1;
+                if (m_term_flags[tpos]) {
+                    return kpos == key.size();
+                }
+                tpos += 1;
+            } while (kpos < key.size());
+            return true;
+        } else {
+            do {
+                if (!m_chars[tpos] || key[kpos] != m_chars[tpos]) {
+                    return false;
+                }
+                kpos += 1;
+                tpos += 1;
+            } while (kpos < key.size());
+            return true;
+        }
+    }
+
+    inline void decode(std::uint64_t tpos, const std::function<void(char)>& fn) const {
         if (bin_mode()) {
             do {
                 fn(m_chars[tpos]);

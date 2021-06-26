@@ -11,6 +11,7 @@
 
 namespace xcdat {
 
+template <class Strings>
 class trie_builder {
   public:
     struct unit_type {
@@ -22,7 +23,7 @@ class trie_builder {
     static constexpr std::uint64_t taboo_npos = 1;
     static constexpr std::uint64_t free_blocks = 16;
 
-    const std::vector<std::string>& m_keys;
+    const Strings& m_keys;
     const std::uint32_t m_l1_bits;  // # of bits for L1 layer of DACs
     const std::uint64_t m_l1_size;
 
@@ -38,7 +39,7 @@ class trie_builder {
     tail_vector::builder m_suffixes;
 
   public:
-    trie_builder(const std::vector<std::string>& keys, std::uint32_t l1_bits, bool bin_mode)
+    trie_builder(const Strings& keys, std::uint32_t l1_bits, bool bin_mode)
         : m_keys(keys), m_l1_bits(l1_bits), m_l1_size(1ULL << l1_bits), m_bin_mode(bin_mode) {
         XCDAT_THROW_IF(m_keys.size() == 0, "The input dataset is empty.");
 

@@ -22,4 +22,9 @@ inline std::uint64_t needed_bits(std::uint64_t x) {
     return bit_tools::msb(x) + 1;
 }
 
+template <class String>
+inline String get_suffix(const String& s, std::uint64_t i) {
+    return s.substr(i, s.size() - i);
+}
+
 }  // namespace xcdat::utils

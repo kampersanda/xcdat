@@ -86,6 +86,14 @@ class code_table {
     inline auto end() const {
         return m_alphabet.end();
     }
+
+    inline auto rbegin() const {
+        return m_alphabet.rbegin();
+    }
+
+    inline auto rend() const {
+        return m_alphabet.rend();
+    }
 };
 
 }  // namespace xcdat
