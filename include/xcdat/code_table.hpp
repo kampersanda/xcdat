@@ -20,11 +20,21 @@ class code_table {
 
   public:
     code_table() = default;
-
     virtual ~code_table() = default;
 
-    template <class Keys>
-    void build(const Keys& keys) {
+    code_table(const code_table&) = delete;
+    code_table& operator=(const code_table&) = delete;
+
+    code_table(code_table&&) noexcept = default;
+    code_table& operator=(code_table&&) noexcept = default;
+
+    template <class Strings>
+    explicit code_table(const Strings& keys) {
+        build(keys);
+    }
+
+    template <class Strings>
+    void build(const Strings& keys) {
         std::array<counter_type, 256> counter;
         for (std::uint32_t ch = 0; ch < 256; ++ch) {
             counter[ch] = {static_cast<std::uint8_t>(ch), 0};
@@ -93,6 +103,13 @@ class code_table {
 
     inline auto rend() const {
         return m_alphabet.rend();
+    }
+
+    template <class Visitor>
+    void visit(Visitor& visitor) {
+        visitor.visit(m_max_length);
+        visitor.visit(m_table);
+        visitor.visit(m_alphabet);
     }
 };
 

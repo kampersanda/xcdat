@@ -38,4 +38,4 @@ add_subdirectory(test)
 
 add_subdirectory(sample)
 
-file(COPY ${CMAKE_SOURCE_DIR}/test/keys.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/test/keys.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/test)

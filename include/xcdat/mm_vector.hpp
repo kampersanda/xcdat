@@ -5,6 +5,7 @@
 
 namespace xcdat {
 
+//! A memory-mappable vector.
 template <class T>
 class mm_vector {
   private:
@@ -12,11 +13,15 @@ class mm_vector {
 
   public:
     mm_vector() = default;
-
     virtual ~mm_vector() = default;
 
-    // NOTE: The input vector is stolen.
-    mm_vector(std::vector<T>& vec) {
+    mm_vector(const mm_vector&) = delete;
+    mm_vector& operator=(const mm_vector&) = delete;
+
+    mm_vector(mm_vector&&) noexcept = default;
+    mm_vector& operator=(mm_vector&&) noexcept = default;
+
+    explicit mm_vector(std::vector<T>&& vec) {
         steal(vec);
     }
 
@@ -25,8 +30,8 @@ class mm_vector {
         m_vec.shrink_to_fit();
     }
 
-    void reset() {
-        m_vec = std::vector<T>();
+    void clear() {
+        m_vec.clear();
     }
 
     inline std::uint64_t size() const {
@@ -57,7 +62,7 @@ class mm_vector {
         return m_vec.data();
     }
 
-    template <typename Visitor>
+    template <class Visitor>
     void visit(Visitor& visitor) {
         visitor.visit(m_vec);
     }

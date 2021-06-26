@@ -11,7 +11,7 @@
 #include <immintrin.h>
 #endif
 
-// From https://github.com/ot/succinct
+// The implementatouns are from https://github.com/ot/succinct.
 namespace xcdat::bit_tools {
 
 static constexpr std::uint64_t ones_step_4 = 0x1111111111111111ULL;

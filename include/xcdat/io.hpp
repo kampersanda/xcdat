@@ -7,7 +7,7 @@
 
 namespace xcdat::io {
 
-static std::vector<std::string> load_strings(std::string_view filepath) {
+[[maybe_unused]] static std::vector<std::string> load_strings(std::string_view filepath) {
     std::ifstream ifs(filepath);
     if (!ifs) {
         return {};

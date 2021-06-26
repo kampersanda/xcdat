@@ -4,8 +4,10 @@
 #include <cstdint>
 #include <numeric>
 
+#include "essentials/essentials.hpp"
+
+#include "bit_tools.hpp"
 #include "mm_vector.hpp"
-#include "utils.hpp"
 
 namespace xcdat {
 
@@ -19,6 +21,13 @@ class bit_vector {
 
       public:
         builder() = default;
+        virtual ~builder() = default;
+
+        builder(const builder&) = delete;
+        builder& operator=(const builder&) = delete;
+
+        builder(builder&&) noexcept = default;
+        builder& operator=(builder&&) noexcept = default;
 
         builder(std::uint64_t size) {
             resize(size);
@@ -47,12 +56,12 @@ class bit_vector {
         }
 
         inline void resize(std::uint64_t size) {
-            m_bits.resize(utils::words_for_bits(size), 0ULL);
+            m_bits.resize(essentials::words_for(size), 0ULL);
             m_size = size;
         }
 
         inline void reserve(std::uint64_t capacity) {
-            m_bits.reserve(utils::words_for_bits(capacity));
+            m_bits.reserve(essentials::words_for(capacity));
         }
 
         inline std::uint64_t size() const {
@@ -74,28 +83,26 @@ class bit_vector {
 
   public:
     bit_vector() = default;
+    virtual ~bit_vector() = default;
 
-    bit_vector(builder& b, bool enable_rank = false, bool enable_select = false) {
+    bit_vector(const bit_vector&) = delete;
+    bit_vector& operator=(const bit_vector&) = delete;
+
+    bit_vector(bit_vector&&) noexcept = default;
+    bit_vector& operator=(bit_vector&&) noexcept = default;
+
+    explicit bit_vector(builder& b, bool enable_rank = false, bool enable_select = false) {
         build(b, enable_rank, enable_select);
     }
 
-    virtual ~bit_vector() = default;
-
-    void reset() {
-        m_size = 0;
-        m_num_ones = 0;
-        m_bits.reset();
-        m_rank_hints.reset();
-        m_select_hints.reset();
-    }
-
     void build(builder& b, bool enable_rank = false, bool enable_select = false) {
-        reset();
-
         m_bits.steal(b.m_bits);
         m_size = b.m_size;
         m_num_ones = std::accumulate(m_bits.begin(), m_bits.end(), 0ULL,
                                      [](std::uint64_t acc, std::uint64_t x) { return acc + bit_tools::popcount(x); });
+        m_rank_hints.clear();
+        m_select_hints.clear();
+
         if (enable_rank) {
             build_rank_hints();
         }
@@ -124,7 +131,7 @@ class bit_vector {
         if (i == size()) {
             return num_ones();
         }
-        const auto [wi, wj] = utils::decompose<64>(i);
+        const auto [wi, wj] = decompose<64>(i);
         return rank_for_word(wi) + (wj != 0 ? bit_tools::popcount(m_bits[wi] << (64 - wj)) : 0);
     }
 
@@ -150,7 +157,21 @@ class bit_vector {
         return word_offset * 64 + bit_tools::select_in_word(m_bits[word_offset], n - curr_rank);
     }
 
+    template <class Visitor>
+    void visit(Visitor& visitor) {
+        visitor.visit(m_size);
+        visitor.visit(m_num_ones);
+        visitor.visit(m_bits);
+        visitor.visit(m_rank_hints);
+        visitor.visit(m_select_hints);
+    }
+
   private:
+    template <std::uint64_t N>
+    static std::tuple<std::uint64_t, std::uint64_t> decompose(std::uint64_t x) {
+        return {x / N, x % N};
+    }
+
     inline std::uint64_t num_blocks() const {
         return m_rank_hints.size() / 2 - 1;
     }
@@ -167,7 +188,7 @@ class bit_vector {
 
     // Absolute rank until the wi-th word
     inline std::uint64_t rank_for_word(std::uint64_t wi) const {
-        const auto [bi, bj] = utils::decompose<block_size>(wi);
+        const auto [bi, bj] = decompose<block_size>(wi);
         return rank_for_block(bi) + rank_in_block(bi, bj);
     }
 

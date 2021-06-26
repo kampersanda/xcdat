@@ -17,7 +17,7 @@ void test_tail_vector(const std::vector<std::string>& sufs, bool bin_mode = fals
             tvb.set_suffix(sufs[i], i);
         }
         tvb.complete(bin_mode, [&](std::uint64_t npos, std::uint64_t tpos) { idxs[npos] = tpos; });
-        tvec = xcdat::tail_vector(tvb);
+        tvec = xcdat::tail_vector(std::move(tvb));
     }
 
     for (std::uint64_t i = 0; i < sufs.size(); i++) {

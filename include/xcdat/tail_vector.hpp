@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -13,7 +12,6 @@
 
 namespace xcdat {
 
-//! TAIL implementation with suffix merge
 class tail_vector {
   public:
     struct suffix_type {
@@ -53,10 +51,14 @@ class tail_vector {
 
       public:
         builder() = default;
-
         virtual ~builder() = default;
 
-        //!
+        builder(const builder&) = delete;
+        builder& operator=(const builder&) = delete;
+
+        builder(builder&&) noexcept = default;
+        builder& operator=(builder&&) noexcept = default;
+
         void set_suffix(std::string_view str, std::uint64_t npos) {
             XCDAT_THROW_IF(str.size() == 0, "The given suffix is empty.");
             m_suffixes.push_back({str, npos});
@@ -119,13 +121,23 @@ class tail_vector {
 
   public:
     tail_vector() = default;
+    virtual ~tail_vector() = default;
 
-    explicit tail_vector(builder& b) {
+    tail_vector(const tail_vector&) = delete;
+    tail_vector& operator=(const tail_vector&) = delete;
+
+    tail_vector(tail_vector&&) noexcept = default;
+    tail_vector& operator=(tail_vector&&) noexcept = default;
+
+    explicit tail_vector(builder&& b) {
         m_chars.steal(b.m_chars);
         m_term_flags.build(b.m_term_flags);
     }
 
-    ~tail_vector() = default;
+    void build(builder&& b) {
+        m_chars.steal(b.m_chars);
+        m_term_flags.build(b.m_term_flags);
+    }
 
     inline bool bin_mode() const {
         return m_term_flags.size() != 0;

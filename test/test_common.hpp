@@ -54,28 +54,6 @@ std::vector<std::string> make_random_keys(std::uint64_t n, std::uint64_t min_m, 
     return keys;
 }
 
-std::vector<std::string> make_random_others(const std::vector<std::string>& keys, std::uint64_t n, std::uint64_t min_m,
-                                            std::uint64_t max_m, char min_c = 'A', char max_c = 'Z',
-                                            std::uint64_t seed = 13) {
-    std::mt19937_64 engine(seed);
-    std::uniform_int_distribution<std::uint64_t> dist_m(min_m, max_m);
-    std::uniform_int_distribution<char> dist_c(min_c, max_c);
-
-    std::vector<std::string> others;
-    for (std::uint64_t i = 0; i < n; ++i) {
-        std::string other;
-        const std::uint64_t length = dist_m(engine);
-        for (std::uint64_t j = 0; j < length; j++) {
-            other.push_back(dist_c(engine));
-        }
-        auto itr = std::find(keys.begin(), keys.end(), other);
-        if (itr == keys.end()) {
-            others.push_back(other);
-        }
-    }
-    return others;
-}
-
 std::vector<std::string> extract_keys(std::vector<std::string>& keys, double ratio = 0.1, std::uint64_t seed = 13) {
     std::mt19937_64 engine(seed);
     std::uniform_real_distribution<double> dist(0.0, 1.0);

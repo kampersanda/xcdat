@@ -6,48 +6,88 @@
 
 #include "bc_vector.hpp"
 #include "trie_builder.hpp"
-#include "utils.hpp"
+// #include "utils.hpp"
 
 namespace xcdat {
 
+/**
+ * A compressed string dictionary based on the XOR-compressed double-array trie.
+ *
+ * @par References
+ *  - Shunsuke Kanda, Kazuhiro Morita and Masao Fuketa. Compressed Double-array Tries for String Dictionaries
+ *    Supporting Fast Lookup. Knowledge and Information Systems (KAIS), 51(3): 1023–1042, 2017.
+ *
+ * @par Links
+ *  - https://kampersanda.github.io/pdf/KAIS2017.pdf
+ *
+ */
+// template <class BcVector>
 class trie {
   public:
     using type = trie;
+    using bcvec_type = bc_vector;
 
   private:
     std::uint64_t m_num_keys = 0;
     code_table m_table;
     bit_vector m_terms;
-    bc_vector m_bcvec;
+    bcvec_type m_bcvec;
     tail_vector m_tvec;
 
   public:
+    //! Default constructor
     trie() = default;
 
+    //! Default destructor
     virtual ~trie() = default;
 
+    //! Copy constructor (deleted)
+    trie(const trie&) = delete;
+
+    //! Copy constructor (deleted)
+    trie& operator=(const trie&) = delete;
+
+    //! Move constructor
+    trie(trie&&) noexcept = default;
+
+    //! Move constructor
+    trie& operator=(trie&&) noexcept = default;
+
+    /**
+     * Build the trie dictioanry from the input keywords.
+     * @param[in] key The query keyword.
+     * @return The associated ID if found.
+     */
     template <class Strings>
     static trie build(const Strings& keys, bool bin_mode = false) {
-        trie_builder b(keys, bc_vector::l1_bits, bin_mode);
-        return trie(b);
+        return trie(trie_builder(keys, bc_vector::l1_bits, bin_mode));
     }
 
-    inline std::uint64_t num_keys() const {
-        return m_num_keys;
-    }
-
+    //! Check the binary mode.
     inline bool bin_mode() const {
         return m_tvec.bin_mode();
     }
 
+    //! Get the number of stored keywords.
+    inline std::uint64_t num_keys() const {
+        return m_num_keys;
+    }
+
+    //! Get the alphabet size.
     inline std::uint64_t alphabet_size() const {
         return m_table.alphabet_size();
     }
 
+    //! Get the maximum length of keywords.
     inline std::uint64_t max_length() const {
         return m_table.max_length();
     }
 
+    /**
+     * Search the given keyword in the trie.
+     * @param[in] key The query keyword.
+     * @return The associated ID if found.
+     */
     inline std::optional<std::uint64_t> lookup(std::string_view key) const {
         std::uint64_t kpos = 0, npos = 0;
         while (!m_bcvec.is_leaf(npos)) {
@@ -65,12 +105,17 @@ class trie {
         }
 
         const std::uint64_t tpos = m_bcvec.link(npos);
-        if (!m_tvec.match(utils::get_suffix(key, kpos), tpos)) {
+        if (!m_tvec.match(get_suffix(key, kpos), tpos)) {
             return std::nullopt;
         }
         return npos_to_id(npos);
     }
 
+    /**
+     * Decode the keyword associated with the given ID.
+     * @param[in] id The keyword ID.
+     * @return The keyword associated with the ID.
+     */
     inline std::string access(std::uint64_t id) const {
         if (num_keys() <= id) {
             return {};
@@ -95,6 +140,9 @@ class trie {
         return decoded;
     }
 
+    /**
+     * An iterator class for common prefix search.
+     */
     class prefix_iterator {
       private:
         const type* m_obj = nullptr;
@@ -129,6 +177,17 @@ class trie {
         return prefix_iterator(this, key);
     }
 
+    inline void prefix_search(std::string_view key,
+                              const std::function<void(std::uint64_t, std::string_view)>& fn) const {
+        auto itr = make_prefix_iterator(key);
+        while (itr.next()) {
+            fn(itr.id(), itr.prefix());
+        }
+    }
+
+    /**
+     * An iterator class for predictive search.
+     */
     class predictive_iterator {
       public:
         struct cursor_type {
@@ -170,11 +229,24 @@ class trie {
         return predictive_iterator(this, key);
     }
 
+    inline void predictive_search(std::string_view key,
+                                  const std::function<void(std::uint64_t, std::string_view)>& fn) const {
+        auto itr = make_predictive_iterator(key);
+        while (itr.next()) {
+            fn(itr.id(), itr.prefix());
+        }
+    }
+
   private:
     template <class Strings>
-    trie(trie_builder<Strings>& b)
-        : m_num_keys(b.m_keys.size()), m_table(b.m_table), m_terms(b.m_terms, true, true),
-          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(b.m_suffixes) {}
+    explicit trie(trie_builder<Strings>&& b)
+        : m_num_keys(b.m_keys.size()), m_table(std::move(b.m_table)), m_terms(b.m_terms, true, true),
+          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(std::move(b.m_suffixes)) {}
+
+    template <class String>
+    static constexpr String get_suffix(const String& s, std::uint64_t i) {
+        return s.substr(i, s.size() - i);
+    }
 
     inline std::uint64_t npos_to_id(std::uint64_t npos) const {
         return m_terms.rank(npos);
@@ -213,7 +285,7 @@ class trie {
         itr->is_end = true;
 
         const std::uint64_t tpos = m_bcvec.link(itr->m_npos);
-        if (!m_tvec.match(utils::get_suffix(itr->m_key, itr->m_kpos), tpos)) {
+        if (!m_tvec.match(get_suffix(itr->m_key, itr->m_kpos), tpos)) {
             itr->m_id = num_keys();
             return false;
         }
@@ -243,7 +315,7 @@ class trie {
                         return false;
                     }
 
-                    if (!m_tvec.prefix_match(utils::get_suffix(itr->m_key, kpos), tpos)) {
+                    if (!m_tvec.prefix_match(get_suffix(itr->m_key, kpos), tpos)) {
                         return false;
                     }
 

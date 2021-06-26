@@ -11,7 +11,7 @@
 
 void test_basic_search(const xcdat::trie& trie, const std::vector<std::string>& keys,
                        const std::vector<std::string>& others) {
-    for (size_t i = 0; i < keys.size(); i++) {
+    for (std::uint64_t i = 0; i < keys.size(); i++) {
         auto id = trie.lookup(keys[i]);
         REQUIRE(id.has_value());
         REQUIRE_LT(id.value(), keys.size());
@@ -19,7 +19,7 @@ void test_basic_search(const xcdat::trie& trie, const std::vector<std::string>& 
         REQUIRE_EQ(keys[i], decoded);
     }
 
-    for (size_t i = 0; i < others.size(); i++) {
+    for (std::uint64_t i = 0; i < others.size(); i++) {
         auto id = trie.lookup(others[i]);
         REQUIRE_FALSE(id.has_value());
     }

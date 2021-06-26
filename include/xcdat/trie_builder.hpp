@@ -13,6 +13,8 @@ namespace xcdat {
 
 template <class Strings>
 class trie_builder {
+    friend class trie;
+
   public:
     struct unit_type {
         std::uint64_t base;
@@ -39,7 +41,7 @@ class trie_builder {
     tail_vector::builder m_suffixes;
 
   public:
-    trie_builder(const Strings& keys, std::uint32_t l1_bits, bool bin_mode)
+    explicit trie_builder(const Strings& keys, std::uint32_t l1_bits, bool bin_mode)
         : m_keys(keys), m_l1_bits(l1_bits), m_l1_size(1ULL << l1_bits), m_bin_mode(bin_mode) {
         XCDAT_THROW_IF(m_keys.size() == 0, "The input dataset is empty.");
 
@@ -81,14 +83,20 @@ class trie_builder {
         m_table.build(keys);
         m_bin_mode |= m_table.has_null();
 
-        // Build the BC unites
+        // Build the BC units
         arrange(0, m_keys.size(), 0, 0);
 
-        // Build
+        // Build the TAIL vector
         m_suffixes.complete(m_bin_mode, [&](std::uint64_t npos, std::uint64_t tpos) { m_units[npos].base = tpos; });
     }
 
     virtual ~trie_builder() = default;
+
+    trie_builder(const trie_builder&) = delete;
+    trie_builder& operator=(const trie_builder&) = delete;
+
+    trie_builder(trie_builder&&) noexcept = default;
+    trie_builder& operator=(trie_builder&&) noexcept = default;
 
   private:
     inline void use_unit(std::uint64_t npos) {
@@ -241,8 +249,6 @@ class trie_builder {
         }
         return true;
     }
-
-    friend class trie;
 };
 
 }  // namespace xcdat
