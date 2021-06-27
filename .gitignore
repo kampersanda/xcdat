@@ -29,7 +29,7 @@
 *.app
 
 # My Definition
-build/
+build*/
 cmake-build-debug/
 .idea/
 .DS_Store

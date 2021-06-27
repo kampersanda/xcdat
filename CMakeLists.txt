@@ -33,9 +33,11 @@ message(STATUS "CXX_FLAGS_RELEASE are ${CMAKE_CXX_FLAGS_RELEASE}")
 
 include_directories(include)
 
-enable_testing()
-add_subdirectory(test)
-
 add_subdirectory(sample)
+add_subdirectory(tools)
 
-file(COPY ${CMAKE_SOURCE_DIR}/test/keys.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/test)
+enable_testing()
+add_subdirectory(tests)
+
+
+file(COPY ${CMAKE_SOURCE_DIR}/tests/keys.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)

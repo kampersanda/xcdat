@@ -3,17 +3,28 @@
 
 #include <xcdat.hpp>
 
+using xcdat_trie = xcdat::trie_8_type;
+
 int main() {
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
     };
 
-    // The dataset must be sorted and unique.
+    // The dataset must be sorted and unique (although it is not needed for the keys).
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
-    auto trie = xcdat::build<xcdat::trie_8_type>(keys);
+    const std::string index_filename = "tmp.idx";
+
+    // Build and save the trie index
+    {
+        const auto trie = xcdat_trie::build(keys);
+        trie.save(index_filename);
+    }
+
+    // Load the trie index
+    const auto trie = xcdat_trie::load(index_filename);
 
     std::cout << "Basic operations" << std::endl;
     {
@@ -41,14 +52,7 @@ int main() {
         }
     }
 
-    std::string index_filename = "tmp.idx";
-    std::cout << "mem: " << xcdat::save(trie, index_filename) << std::endl;
-
-    {
-        auto ohter = xcdat::load<xcdat::trie_8_type>(index_filename);
-        std::cout << "num_keys:" << ohter.num_keys() << std::endl;
-        std::cout << "mem: " << xcdat::get_memory_in_bytes(ohter) << std::endl;
-    }
+    std::remove(index_filename.c_str());
 
     return 0;
 }

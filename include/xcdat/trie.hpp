@@ -26,6 +26,8 @@ class trie {
     using this_type = trie<BcVector>;
     using bc_vector_type = BcVector;
 
+    static constexpr auto l1_bits = bc_vector_type::l1_bits;
+
   private:
     std::uint64_t m_num_keys = 0;
     code_table m_table;
@@ -53,18 +55,22 @@ class trie {
     trie& operator=(trie&&) noexcept = default;
 
     template <class Strings>
-    explicit trie(trie_builder<Strings>&& b)
-        : m_num_keys(b.m_keys.size()), m_table(std::move(b.m_table)), m_terms(b.m_terms, true, true),
-          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(std::move(b.m_suffixes)) {}
-
-    /**
-     * Build the trie dictioanry from the input keywords.
-     * @param[in] key The query keyword.
-     * @return The associated ID if found.
-     */
-    template <class Strings>
     static this_type build(const Strings& keys, bool bin_mode = false) {
-        return this_type(trie_builder(keys, bc_vector_type::l1_bits, bin_mode));
+        return this_type(trie_builder(keys, l1_bits, bin_mode));
+    }
+
+    static this_type load(std::string_view filepath) {
+        this_type obj;
+        essentials::load(obj, filepath.data());
+        return obj;
+    }
+
+    std::uint64_t save(std::string_view filepath) const {
+        return essentials::save(const_cast<this_type&>(*this), filepath.data());
+    }
+
+    std::uint64_t memory_in_bytes() const {
+        return essentials::visit<this_type, essentials::sizer>(const_cast<this_type&>(*this), "");
     }
 
     //! Check the binary mode.
@@ -271,6 +277,11 @@ class trie {
     }
 
   private:
+    template <class Strings>
+    explicit trie(trie_builder<Strings>&& b)
+        : m_num_keys(b.m_keys.size()), m_table(std::move(b.m_table)), m_terms(b.m_terms, true, true),
+          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(std::move(b.m_suffixes)) {}
+
     template <class String>
     static constexpr String get_suffix(const String& s, std::uint64_t i) {
         assert(i <= s.size());
