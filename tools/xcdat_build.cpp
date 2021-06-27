@@ -43,6 +43,8 @@ int build(const cmd_line_parser::parser& p) {
     tfm::printfln("alphabet_size: %d", trie.alphabet_size());
     tfm::printfln("max_length: %d", trie.max_length());
 
+    trie.save(output_idx);
+
     return 0;
 }
 
@@ -50,6 +52,7 @@ int main(int argc, char** argv) {
 #ifndef NDEBUG
     tfm::warnfln("The code is running in debug mode.");
 #endif
+    std::ios::sync_with_stdio(false);
 
     auto p = make_parser(argc, argv);
     if (!p.parse()) {
