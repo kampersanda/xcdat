@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "essentials/essentials.hpp"
 #include "trie_builder.hpp"
 
 namespace xcdat {
@@ -50,6 +51,11 @@ class trie {
 
     //! Move constructor
     trie& operator=(trie&&) noexcept = default;
+
+    template <class Strings>
+    explicit trie(trie_builder<Strings>&& b)
+        : m_num_keys(b.m_keys.size()), m_table(std::move(b.m_table)), m_terms(b.m_terms, true, true),
+          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(std::move(b.m_suffixes)) {}
 
     /**
      * Build the trie dictioanry from the input keywords.
@@ -265,11 +271,6 @@ class trie {
     }
 
   private:
-    template <class Strings>
-    explicit trie(trie_builder<Strings>&& b)
-        : m_num_keys(b.m_keys.size()), m_table(std::move(b.m_table)), m_terms(b.m_terms, true, true),
-          m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(std::move(b.m_suffixes)) {}
-
     template <class String>
     static constexpr String get_suffix(const String& s, std::uint64_t i) {
         assert(i <= s.size());

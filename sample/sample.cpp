@@ -13,7 +13,7 @@ int main() {
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
-    auto trie = xcdat::trie_8_type::build(keys);
+    auto trie = xcdat::build<xcdat::trie_8_type>(keys);
 
     std::cout << "Basic operations" << std::endl;
     {
@@ -39,6 +39,15 @@ int main() {
         while (itr.next()) {
             std::cout << itr.decoded_view() << " -> " << itr.id() << std::endl;
         }
+    }
+
+    std::string index_filename = "tmp.idx";
+    std::cout << "mem: " << xcdat::save(trie, index_filename) << std::endl;
+
+    {
+        auto ohter = xcdat::load<xcdat::trie_8_type>(index_filename);
+        std::cout << "num_keys:" << ohter.num_keys() << std::endl;
+        std::cout << "mem: " << xcdat::get_memory_in_bytes(ohter) << std::endl;
     }
 
     return 0;

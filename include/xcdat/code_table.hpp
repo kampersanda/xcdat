@@ -3,7 +3,7 @@
 #include <array>
 #include <string_view>
 
-#include "mm_vector.hpp"
+#include "vector_wrapper.hpp"
 
 namespace xcdat {
 
@@ -11,7 +11,7 @@ class code_table {
   private:
     std::uint64_t m_max_length = 0;
     std::array<std::uint8_t, 512> m_table;
-    mm_vector<std::uint8_t> m_alphabet;
+    vector_wrapper<std::uint8_t> m_alphabet;
 
     struct counter_type {
         std::uint8_t ch;

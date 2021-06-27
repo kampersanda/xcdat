@@ -5,33 +5,36 @@
 
 namespace xcdat {
 
-//! A memory-mappable vector.
 template <class T>
-class mm_vector {
+class vector_wrapper {
   private:
     std::vector<T> m_vec;
 
   public:
-    mm_vector() = default;
-    virtual ~mm_vector() = default;
+    vector_wrapper() = default;
+    virtual ~vector_wrapper() = default;
 
-    mm_vector(const mm_vector&) = delete;
-    mm_vector& operator=(const mm_vector&) = delete;
+    vector_wrapper(const vector_wrapper&) = delete;
+    vector_wrapper& operator=(const vector_wrapper&) = delete;
 
-    mm_vector(mm_vector&&) noexcept = default;
-    mm_vector& operator=(mm_vector&&) noexcept = default;
+    vector_wrapper(vector_wrapper&&) noexcept = default;
+    vector_wrapper& operator=(vector_wrapper&&) noexcept = default;
 
-    explicit mm_vector(std::vector<T>&& vec) {
+    explicit vector_wrapper(std::vector<T>&& vec) {
         steal(vec);
     }
 
     void steal(std::vector<T>& vec) {
-        m_vec.swap(vec);
-        m_vec.shrink_to_fit();
+        if (vec.size() != 0) {
+            m_vec = std::move(vec);
+            m_vec.shrink_to_fit();
+        } else {
+            clear();
+        }
     }
 
     void clear() {
-        m_vec.clear();
+        *this = vector_wrapper<T>();
     }
 
     inline std::uint64_t size() const {

@@ -17,11 +17,11 @@ class bc_vector_7 {
 
   private:
     std::uint64_t m_num_frees = 0;
-    mm_vector<std::uint8_t> m_ints_l1;
-    mm_vector<std::uint16_t> m_ints_l2;
-    mm_vector<std::uint32_t> m_ints_l3;
-    mm_vector<std::uint64_t> m_ints_l4;
-    std::array<mm_vector<std::uint64_t>, max_levels - 1> m_ranks;
+    vector_wrapper<std::uint8_t> m_ints_l1;
+    vector_wrapper<std::uint16_t> m_ints_l2;
+    vector_wrapper<std::uint32_t> m_ints_l3;
+    vector_wrapper<std::uint64_t> m_ints_l4;
+    std::array<vector_wrapper<std::uint64_t>, max_levels - 1> m_ranks;
     compact_vector m_links;
     bit_vector m_leaves;
 

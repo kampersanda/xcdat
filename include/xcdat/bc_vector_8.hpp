@@ -15,7 +15,7 @@ class bc_vector_8 {
   private:
     std::uint32_t m_num_levels = 0;
     std::uint64_t m_num_frees = 0;
-    std::array<mm_vector<std::uint8_t>, max_levels> m_bytes;
+    std::array<vector_wrapper<std::uint8_t>, max_levels> m_bytes;
     std::array<bit_vector, max_levels - 1> m_nexts;
     compact_vector m_links;
     bit_vector m_leaves;

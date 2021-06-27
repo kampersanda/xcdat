@@ -8,7 +8,7 @@
 
 #include "bit_vector.hpp"
 #include "exception.hpp"
-#include "mm_vector.hpp"
+#include "vector_wrapper.hpp"
 
 namespace xcdat {
 
@@ -116,7 +116,7 @@ class tail_vector {
     };
 
   private:
-    mm_vector<char> m_chars;
+    vector_wrapper<char> m_chars;
     bit_vector m_terms;
 
   public:
@@ -218,6 +218,12 @@ class tail_vector {
 
     inline std::uint64_t size() const {
         return m_chars.size();
+    }
+
+    template <class Visitor>
+    void visit(Visitor& visitor) {
+        visitor.visit(m_chars);
+        visitor.visit(m_terms);
     }
 };
 
