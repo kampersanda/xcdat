@@ -7,7 +7,7 @@
 
 namespace xcdat {
 
-class bc_vector {
+class bc_vector_8 {
   public:
     static constexpr std::uint32_t l1_bits = 8;
     static constexpr std::uint32_t max_levels = sizeof(std::uint64_t);
@@ -21,17 +21,17 @@ class bc_vector {
     bit_vector m_leaves;
 
   public:
-    bc_vector() = default;
-    virtual ~bc_vector() = default;
+    bc_vector_8() = default;
+    virtual ~bc_vector_8() = default;
 
-    bc_vector(const bc_vector&) = delete;
-    bc_vector& operator=(const bc_vector&) = delete;
+    bc_vector_8(const bc_vector_8&) = delete;
+    bc_vector_8& operator=(const bc_vector_8&) = delete;
 
-    bc_vector(bc_vector&&) noexcept = default;
-    bc_vector& operator=(bc_vector&&) noexcept = default;
+    bc_vector_8(bc_vector_8&&) noexcept = default;
+    bc_vector_8& operator=(bc_vector_8&&) noexcept = default;
 
     template <class BcUnits>
-    explicit bc_vector(const BcUnits& bc_units, bit_vector::builder&& leaves) {
+    explicit bc_vector_8(const BcUnits& bc_units, bit_vector::builder&& leaves) {
         build(bc_units, std::move(leaves));
     }
 

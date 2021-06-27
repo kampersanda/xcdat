@@ -4,9 +4,7 @@
 #include <optional>
 #include <string>
 
-#include "bc_vector.hpp"
 #include "trie_builder.hpp"
-// #include "utils.hpp"
 
 namespace xcdat {
 
@@ -21,17 +19,17 @@ namespace xcdat {
  *  - https://kampersanda.github.io/pdf/KAIS2017.pdf
  *
  */
-// template <class BcVector>
+template <class BcVector>
 class trie {
   public:
-    using type = trie;
-    using bcvec_type = bc_vector;
+    using this_type = trie<BcVector>;
+    using bc_vector_type = BcVector;
 
   private:
     std::uint64_t m_num_keys = 0;
     code_table m_table;
     bit_vector m_terms;
-    bcvec_type m_bcvec;
+    bc_vector_type m_bcvec;
     tail_vector m_tvec;
 
   public:
@@ -59,8 +57,8 @@ class trie {
      * @return The associated ID if found.
      */
     template <class Strings>
-    static trie build(const Strings& keys, bool bin_mode = false) {
-        return trie(trie_builder(keys, bc_vector::l1_bits, bin_mode));
+    static this_type build(const Strings& keys, bool bin_mode = false) {
+        return this_type(trie_builder(keys, bc_vector_type::l1_bits, bin_mode));
     }
 
     //! Check the binary mode.
@@ -145,7 +143,7 @@ class trie {
      */
     class prefix_iterator {
       private:
-        const type* m_obj = nullptr;
+        const this_type* m_obj = nullptr;
         std::string_view m_key;
         std::uint64_t m_id = 0;
         std::uint64_t m_kpos = 0;
@@ -171,7 +169,7 @@ class trie {
         }
 
       private:
-        prefix_iterator(const type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
+        prefix_iterator(const this_type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
 
         friend class trie;
     };
@@ -201,7 +199,7 @@ class trie {
         };
 
       private:
-        const type* m_obj = nullptr;
+        const this_type* m_obj = nullptr;
         std::string_view m_key;
         std::uint64_t m_id = 0;
         std::string m_decoded;
@@ -227,7 +225,7 @@ class trie {
         }
 
       private:
-        predictive_iterator(const type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
+        predictive_iterator(const this_type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
 
         friend class trie;
     };

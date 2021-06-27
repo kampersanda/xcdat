@@ -13,7 +13,7 @@ int main() {
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
-    auto trie = xcdat::trie::build(keys);
+    auto trie = xcdat::trie_8_type::build(keys);
 
     std::cout << "Basic operations" << std::endl;
     {

@@ -5,7 +5,7 @@
 
 #include "doctest/doctest.h"
 #include "test_common.hpp"
-#include "xcdat/bc_vector.hpp"
+#include "xcdat/bc_vector_8.hpp"
 
 struct bc_unit {
     std::uint64_t base;
@@ -38,11 +38,11 @@ std::uint64_t get_num_ones(const std::vector<bool>& bits) {
     return std::accumulate(bits.begin(), bits.end(), 0ULL);
 }
 
-TEST_CASE("Test xcdat::bc_vector") {
+TEST_CASE("Test xcdat::bc_vector_8") {
     auto bc_units = make_random_units(10000);
     auto leaf_flags = xcdat::test::make_random_bits(10000, 0.2);
 
-    xcdat::bc_vector bc(bc_units, to_bit_vector_builder(leaf_flags));
+    xcdat::bc_vector_8 bc(bc_units, to_bit_vector_builder(leaf_flags));
 
     REQUIRE_EQ(bc.num_units(), bc_units.size());
     REQUIRE_EQ(bc.num_leaves(), get_num_ones(leaf_flags));

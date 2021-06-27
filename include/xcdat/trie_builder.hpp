@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string_view>
 
-#include "bc_vector.hpp"
+// #include "bc_vector.hpp"
 #include "code_table.hpp"
 #include "exception.hpp"
 #include "tail_vector.hpp"
@@ -13,6 +13,7 @@ namespace xcdat {
 
 template <class Strings>
 class trie_builder {
+    template <class>
     friend class trie;
 
   public:
@@ -42,7 +43,7 @@ class trie_builder {
 
   public:
     explicit trie_builder(const Strings& keys, std::uint32_t l1_bits, bool bin_mode)
-        : m_keys(keys), m_l1_bits(l1_bits), m_l1_size(1ULL << l1_bits), m_bin_mode(bin_mode) {
+        : m_keys(keys), m_l1_bits(std::min(l1_bits, 8U)), m_l1_size(1ULL << m_l1_bits), m_bin_mode(bin_mode) {
         XCDAT_THROW_IF(m_keys.size() == 0, "The input dataset is empty.");
 
         // Reserve
