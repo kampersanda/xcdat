@@ -9,7 +9,8 @@
 #include "test_common.hpp"
 #include "xcdat.hpp"
 
-using trie_type = xcdat::trie_8_type;
+using trie_type = xcdat::trie_7_type;
+// using trie_type = xcdat::trie_8_type;
 
 void test_basic_operations(const trie_type& trie, const std::vector<std::string>& keys,
                            const std::vector<std::string>& others) {

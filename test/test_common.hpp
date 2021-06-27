@@ -15,6 +15,14 @@ std::vector<T> to_unique_vec(std::vector<T>&& vec) {
     return std::move(vec);
 }
 
+std::uint64_t max_length(const std::vector<std::string>& keys) {
+    std::uint64_t n = 0;
+    for (auto& key : keys) {
+        n = std::max<std::uint64_t>(n, key.size());
+    }
+    return n;
+}
+
 std::vector<bool> make_random_bits(std::uint64_t n, double dens = 0.5, std::uint64_t seed = 13) {
     std::mt19937_64 engine(seed);
     std::uniform_real_distribution<double> dist(0.0, 1.0);
@@ -71,14 +79,6 @@ std::vector<std::string> extract_keys(std::vector<std::string>& keys, double rat
 
     keys = keys1;
     return keys2;
-}
-
-std::uint64_t max_length(const std::vector<std::string>& keys) {
-    std::uint64_t n = 0;
-    for (auto& key : keys) {
-        n = std::max<std::uint64_t>(n, key.size());
-    }
-    return n;
 }
 
 }  // namespace xcdat::test
