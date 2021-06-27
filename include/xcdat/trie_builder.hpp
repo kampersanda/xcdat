@@ -160,8 +160,8 @@ class trie_builder {
         }
     }
 
-    void arrange(std::uint64_t beg, std::uint64_t end, std::uint64_t depth, std::uint64_t npos) {
-        if (m_keys[beg].size() == depth) {
+    void arrange(std::uint64_t beg, std::uint64_t end, std::uint64_t kpos, std::uint64_t npos) {
+        if (m_keys[beg].size() == kpos) {
             m_terms.set_bit(npos, true);
             if (++beg == end) {  // without link?
                 m_units[npos].base = 0;  // with an empty suffix
@@ -169,19 +169,19 @@ class trie_builder {
                 return;
             }
         } else if (beg + 1 == end) {  // leaf?
-            XCDAT_THROW_IF(m_keys[beg].size() <= depth, "The input keys are not unique.");
+            XCDAT_THROW_IF(m_keys[beg].size() <= kpos, "The input keys are not unique.");
             m_terms.set_bit(npos, true);
             m_leaves.set_bit(npos, true);
-            m_suffixes.set_suffix({m_keys[beg].data() + depth, m_keys[beg].size() - depth}, npos);
+            m_suffixes.set_suffix({m_keys[beg].data() + kpos, m_keys[beg].size() - kpos}, npos);
             return;
         }
 
         // fetching edges
         {
             m_edges.clear();
-            auto ch = static_cast<std::uint8_t>(m_keys[beg][depth]);
+            auto ch = static_cast<std::uint8_t>(m_keys[beg][kpos]);
             for (auto i = beg + 1; i < end; ++i) {
-                const auto next_ch = static_cast<std::uint8_t>(m_keys[i][depth]);
+                const auto next_ch = static_cast<std::uint8_t>(m_keys[i][kpos]);
                 if (ch != next_ch) {
                     XCDAT_THROW_IF(next_ch < ch, "The input keys are not in lexicographical order.");
                     m_edges.push_back(ch);
@@ -206,16 +206,16 @@ class trie_builder {
 
         // following the children
         auto i = beg;
-        auto ch = static_cast<uint8_t>(m_keys[beg][depth]);
+        auto ch = static_cast<uint8_t>(m_keys[beg][kpos]);
         for (auto j = beg + 1; j < end; ++j) {
-            const auto next_ch = static_cast<uint8_t>(m_keys[j][depth]);
+            const auto next_ch = static_cast<uint8_t>(m_keys[j][kpos]);
             if (ch != next_ch) {
-                arrange(i, j, depth + 1, base ^ m_table.get_code(ch));
+                arrange(i, j, kpos + 1, base ^ m_table.get_code(ch));
                 ch = next_ch;
                 i = j;
             }
         }
-        arrange(i, end, depth + 1, base ^ m_table.get_code(ch));
+        arrange(i, end, kpos + 1, base ^ m_table.get_code(ch));
     }
 
     inline std::uint64_t xcheck(std::uint64_t lpos) const {

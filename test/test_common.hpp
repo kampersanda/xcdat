@@ -73,4 +73,12 @@ std::vector<std::string> extract_keys(std::vector<std::string>& keys, double rat
     return keys2;
 }
 
+std::uint64_t max_length(const std::vector<std::string>& keys) {
+    std::uint64_t n = 0;
+    for (auto& key : keys) {
+        n = std::max<std::uint64_t>(n, key.size());
+    }
+    return n;
+}
+
 }  // namespace xcdat::test

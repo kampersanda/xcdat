@@ -47,7 +47,7 @@ class tail_vector {
 
         // Released
         std::vector<char> m_chars;
-        bit_vector::builder m_term_flags;
+        bit_vector::builder m_terms;
 
       public:
         builder() = default;
@@ -73,7 +73,7 @@ class tail_vector {
             // Dummy for an empty suffix
             m_chars.emplace_back('\0');
             if (bin_mode) {
-                m_term_flags.push_back(false);
+                m_terms.push_back(false);
             }
 
             const suffix_type dmmy_suffix = {{nullptr, 0}, 0};
@@ -100,9 +100,9 @@ class tail_vector {
                     std::copy(curr_suffix.begin(), curr_suffix.end(), std::back_inserter(m_chars));
                     if (bin_mode) {
                         for (std::uint64_t j = 1; j < curr_suffix.size(); ++j) {
-                            m_term_flags.push_back(false);
+                            m_terms.push_back(false);
                         }
-                        m_term_flags.push_back(true);
+                        m_terms.push_back(true);
                     } else {
                         m_chars.emplace_back('\0');
                     }
@@ -117,7 +117,7 @@ class tail_vector {
 
   private:
     mm_vector<char> m_chars;
-    bit_vector m_term_flags;
+    bit_vector m_terms;
 
   public:
     tail_vector() = default;
@@ -131,16 +131,16 @@ class tail_vector {
 
     explicit tail_vector(builder&& b) {
         m_chars.steal(b.m_chars);
-        m_term_flags.build(b.m_term_flags);
+        m_terms.build(b.m_terms);
     }
 
     void build(builder&& b) {
         m_chars.steal(b.m_chars);
-        m_term_flags.build(b.m_term_flags);
+        m_terms.build(b.m_terms);
     }
 
     inline bool bin_mode() const {
-        return m_term_flags.size() != 0;
+        return m_terms.size() != 0;
     }
 
     inline bool match(std::string_view key, std::uint64_t tpos) const {
@@ -156,7 +156,7 @@ class tail_vector {
                     return false;
                 }
                 kpos += 1;
-                if (m_term_flags[tpos]) {
+                if (m_terms[tpos]) {
                     return kpos == key.size();
                 }
                 tpos += 1;
@@ -174,11 +174,8 @@ class tail_vector {
         }
     }
 
-    inline bool prefix_match(std::string_view key, std::uint64_t& tpos) const {
-        if (key.size() == 0) {
-            return true;
-        }
-
+    inline bool prefix_match(std::string_view key, std::uint64_t tpos) const {
+        assert(key.size() != 0);
         std::uint64_t kpos = 0;
 
         if (bin_mode()) {
@@ -187,7 +184,7 @@ class tail_vector {
                     return false;
                 }
                 kpos += 1;
-                if (m_term_flags[tpos]) {
+                if (m_terms[tpos]) {
                     return kpos == key.size();
                 }
                 tpos += 1;
@@ -207,13 +204,15 @@ class tail_vector {
 
     inline void decode(std::uint64_t tpos, const std::function<void(char)>& fn) const {
         if (bin_mode()) {
-            do {
-                fn(m_chars[tpos]);
-            } while (!m_term_flags[tpos++]);
+            if (tpos != 0) {
+                do {
+                    fn(m_chars[tpos]);
+                } while (!m_terms[tpos++]);
+            }
         } else {
-            do {
+            while (m_chars[tpos]) {
                 fn(m_chars[tpos++]);
-            } while (m_chars[tpos]);
+            }
         }
     }
 

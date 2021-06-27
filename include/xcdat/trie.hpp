@@ -116,7 +116,7 @@ class trie {
      * @param[in] id The keyword ID.
      * @return The keyword associated with the ID.
      */
-    inline std::string access(std::uint64_t id) const {
+    inline std::string decode(std::uint64_t id) const {
         if (num_keys() <= id) {
             return {};
         }
@@ -124,11 +124,11 @@ class trie {
         std::string decoded;
         decoded.reserve(max_length());
 
-        auto npos = id_to_npos(id);
-        auto tpos = m_bcvec.is_leaf(npos) ? m_bcvec.link(npos) : UINT64_MAX;
+        std::uint64_t npos = id_to_npos(id);
+        std::uint64_t tpos = m_bcvec.is_leaf(npos) ? m_bcvec.link(npos) : UINT64_MAX;
 
         while (npos != 0) {
-            const auto ppos = m_bcvec.check(npos);
+            const std::uint64_t ppos = m_bcvec.check(npos);
             decoded.push_back(m_table.get_char(m_bcvec.base(ppos) ^ npos));
             npos = ppos;
         }
@@ -163,8 +163,11 @@ class trie {
         inline std::uint64_t id() const {
             return m_id;
         }
-        inline std::string_view prefix() const {
-            return {m_key.data(), m_kpos};
+        inline std::string decoded() const {
+            return std::string(m_key.data(), m_kpos);
+        }
+        inline std::string_view decoded_view() const {
+            return std::string_view(m_key.data(), m_kpos);
         }
 
       private:
@@ -173,6 +176,7 @@ class trie {
         friend class trie;
     };
 
+    //! Make the iterator for the prefix search
     inline prefix_iterator make_prefix_iterator(std::string_view key) const {
         return prefix_iterator(this, key);
     }
@@ -181,7 +185,7 @@ class trie {
                               const std::function<void(std::uint64_t, std::string_view)>& fn) const {
         auto itr = make_prefix_iterator(key);
         while (itr.next()) {
-            fn(itr.id(), itr.prefix());
+            fn(itr.id(), itr.decoded_view());
         }
     }
 
@@ -200,7 +204,7 @@ class trie {
         const type* m_obj = nullptr;
         std::string_view m_key;
         std::uint64_t m_id = 0;
-        std::string m_prefix;
+        std::string m_decoded;
         std::vector<cursor_type> m_stack;
         bool is_beg = true;
         bool is_end = false;
@@ -215,8 +219,11 @@ class trie {
         inline std::uint64_t id() const {
             return m_id;
         }
-        inline std::string_view prefix() const {
-            return m_prefix;
+        inline std::string decoded() const {
+            return m_decoded;
+        }
+        inline std::string_view decoded_view() const {
+            return m_decoded;
         }
 
       private:
@@ -233,8 +240,30 @@ class trie {
                                   const std::function<void(std::uint64_t, std::string_view)>& fn) const {
         auto itr = make_predictive_iterator(key);
         while (itr.next()) {
-            fn(itr.id(), itr.prefix());
+            fn(itr.id(), itr.decoded_view());
         }
+    }
+
+    using enumerative_iterator = predictive_iterator;
+
+    inline enumerative_iterator make_enumerative_iterator() const {
+        return enumerative_iterator(this, "");
+    }
+
+    inline void enumerate(const std::function<void(std::uint64_t, std::string_view)>& fn) const {
+        auto itr = make_enumerative_iterator();
+        while (itr.next()) {
+            fn(itr.id(), itr.decoded_view());
+        }
+    }
+
+    template <class Visitor>
+    void visit(Visitor& visitor) {
+        visitor.visit(m_num_keys);
+        visitor.visit(m_table);
+        visitor.visit(m_terms);
+        visitor.visit(m_bcvec);
+        visitor.visit(m_tvec);
     }
 
   private:
@@ -245,6 +274,7 @@ class trie {
 
     template <class String>
     static constexpr String get_suffix(const String& s, std::uint64_t i) {
+        assert(i <= s.size());
         return s.substr(i, s.size() - i);
     }
 
@@ -269,13 +299,29 @@ class trie {
             }
         }
 
+        if (bin_mode() and itr->m_kpos == itr->m_key.size()) {
+            // Is the key terminated at an inner term?
+            itr->is_end = true;
+            itr->m_id = num_keys();
+            return false;
+        }
+
         while (!m_bcvec.is_leaf(itr->m_npos)) {
+            if (bin_mode() and itr->m_kpos == itr->m_key.size()) {
+                // Is the key terminated at an internal node (not term)?
+                itr->is_end = true;
+                itr->m_id = num_keys();
+                return false;
+            }
+
             const std::uint64_t cpos = m_bcvec.base(itr->m_npos) ^ m_table.get_code(itr->m_key[itr->m_kpos++]);
+
             if (m_bcvec.check(cpos) != itr->m_npos) {
                 itr->is_end = true;
                 itr->m_id = num_keys();
                 return false;
             }
+
             itr->m_npos = cpos;
             if (!m_bcvec.is_leaf(itr->m_npos) && m_terms[itr->m_npos]) {
                 itr->m_id = npos_to_id(itr->m_npos);
@@ -309,35 +355,30 @@ class trie {
             for (; kpos < itr->m_key.size(); ++kpos) {
                 if (m_bcvec.is_leaf(npos)) {
                     itr->is_end = true;
-
-                    std::uint64_t tpos = m_bcvec.link(npos);
+                    const std::uint64_t tpos = m_bcvec.link(npos);
                     if (tpos == 0) {
                         return false;
                     }
-
                     if (!m_tvec.prefix_match(get_suffix(itr->m_key, kpos), tpos)) {
                         return false;
                     }
-
                     itr->m_id = npos_to_id(npos);
-                    m_tvec.decode(tpos, [&](char c) { itr->m_prefix.push_back(c); });
-
+                    m_tvec.decode(tpos, [&](char c) { itr->m_decoded.push_back(c); });
                     return true;
                 }
 
                 const std::uint64_t cpos = m_bcvec.base(npos) ^ m_table.get_code(itr->m_key[kpos]);
-
                 if (m_bcvec.check(cpos) != npos) {
                     itr->is_end = true;
                     return false;
                 }
 
                 npos = cpos;
-                itr->m_prefix.push_back(itr->m_key[kpos]);
+                itr->m_decoded.push_back(itr->m_key[kpos]);
             }
 
-            if (!itr->m_prefix.empty()) {
-                itr->m_stack.push_back({itr->m_prefix.back(), kpos, npos});
+            if (!itr->m_decoded.empty()) {
+                itr->m_stack.push_back({itr->m_decoded.back(), kpos, npos});
             } else {
                 itr->m_stack.push_back({'\0', kpos, npos});
             }
@@ -351,13 +392,13 @@ class trie {
             itr->m_stack.pop_back();
 
             if (0 < kpos) {
-                itr->m_prefix.resize(kpos);
-                itr->m_prefix.back() = label;
+                itr->m_decoded.resize(kpos);
+                itr->m_decoded.back() = label;
             }
 
             if (m_bcvec.is_leaf(npos)) {
                 itr->m_id = npos_to_id(npos);
-                m_tvec.decode(m_bcvec.link(npos), [&](char c) { itr->m_prefix.push_back(c); });
+                m_tvec.decode(m_bcvec.link(npos), [&](char c) { itr->m_decoded.push_back(c); });
                 return true;
             }
 

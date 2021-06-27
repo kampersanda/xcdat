@@ -5,7 +5,8 @@
 
 int main() {
     std::vector<std::string> keys = {
-        "Mac", "MacBook", "MacBook_Air", "MacBook_Pro", "Mac_Pro", "iMac", "Mac_Mini",
+        "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
+        "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
     };
 
     // The dataset must be sorted and unique.
@@ -18,7 +19,7 @@ int main() {
     {
         const auto id = trie.lookup("MacBook_Pro");
         if (id.has_value()) {
-            std::cout << trie.access(id.value()) << " -> " << id.has_value() << std::endl;
+            std::cout << trie.decode(id.value()) << " -> " << id.has_value() << std::endl;
         } else {
             std::cout << "Not found" << std::endl;
         }
@@ -28,7 +29,7 @@ int main() {
     {
         auto itr = trie.make_prefix_iterator("MacBook_Air");
         while (itr.next()) {
-            std::cout << itr.prefix() << " -> " << itr.id() << std::endl;
+            std::cout << itr.decoded_view() << " -> " << itr.id() << std::endl;
         }
     }
 
@@ -36,7 +37,7 @@ int main() {
     {
         auto itr = trie.make_predictive_iterator("Mac");
         while (itr.next()) {
-            std::cout << itr.prefix() << " -> " << itr.id() << std::endl;
+            std::cout << itr.decoded_view() << " -> " << itr.id() << std::endl;
         }
     }
 
