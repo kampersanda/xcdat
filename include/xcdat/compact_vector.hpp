@@ -4,7 +4,7 @@
 
 #include "bit_tools.hpp"
 #include "exception.hpp"
-#include "vector_wrapper.hpp"
+#include "immutable_vector.hpp"
 
 namespace xcdat {
 
@@ -14,7 +14,7 @@ class compact_vector {
     std::uint64_t m_size = 0;
     std::uint64_t m_bits = 0;
     std::uint64_t m_mask = 0;
-    vector_wrapper<std::uint64_t> m_chunks;
+    immutable_vector<std::uint64_t> m_chunks;
 
   public:
     compact_vector() = default;

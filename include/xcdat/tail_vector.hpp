@@ -8,7 +8,7 @@
 
 #include "bit_vector.hpp"
 #include "exception.hpp"
-#include "vector_wrapper.hpp"
+#include "immutable_vector.hpp"
 
 namespace xcdat {
 
@@ -116,7 +116,7 @@ class tail_vector {
     };
 
   private:
-    vector_wrapper<char> m_chars;
+    immutable_vector<char> m_chars;
     bit_vector m_terms;
 
   public:

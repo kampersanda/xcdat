@@ -7,7 +7,7 @@
 #include "essentials/essentials.hpp"
 
 #include "bit_tools.hpp"
-#include "vector_wrapper.hpp"
+#include "immutable_vector.hpp"
 
 namespace xcdat {
 
@@ -77,9 +77,9 @@ class bit_vector {
   private:
     std::uint64_t m_size = 0;
     std::uint64_t m_num_ones = 0;
-    vector_wrapper<std::uint64_t> m_bits;
-    vector_wrapper<std::uint64_t> m_rank_hints;
-    vector_wrapper<std::uint64_t> m_select_hints;
+    immutable_vector<std::uint64_t> m_bits;
+    immutable_vector<std::uint64_t> m_rank_hints;
+    immutable_vector<std::uint64_t> m_select_hints;
 
   public:
     bit_vector() = default;

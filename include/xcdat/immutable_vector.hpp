@@ -6,21 +6,21 @@
 namespace xcdat {
 
 template <class T>
-class vector_wrapper {
+class immutable_vector {
   private:
     std::vector<T> m_vec;
 
   public:
-    vector_wrapper() = default;
-    virtual ~vector_wrapper() = default;
+    immutable_vector() = default;
+    virtual ~immutable_vector() = default;
 
-    vector_wrapper(const vector_wrapper&) = delete;
-    vector_wrapper& operator=(const vector_wrapper&) = delete;
+    immutable_vector(const immutable_vector&) = delete;
+    immutable_vector& operator=(const immutable_vector&) = delete;
 
-    vector_wrapper(vector_wrapper&&) noexcept = default;
-    vector_wrapper& operator=(vector_wrapper&&) noexcept = default;
+    immutable_vector(immutable_vector&&) noexcept = default;
+    immutable_vector& operator=(immutable_vector&&) noexcept = default;
 
-    explicit vector_wrapper(std::vector<T>&& vec) {
+    explicit immutable_vector(std::vector<T>&& vec) {
         steal(vec);
     }
 
@@ -34,7 +34,7 @@ class vector_wrapper {
     }
 
     void clear() {
-        *this = vector_wrapper<T>();
+        *this = immutable_vector<T>();
     }
 
     inline std::uint64_t size() const {
