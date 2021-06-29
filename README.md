@@ -1,39 +1,36 @@
 # Xcdat: Fast compressed trie dictionary library
 
-## What is Xcdat?
+**Xcdat** is a C++17 header-only library of a fast compressed string dictionary based on the improved double-array trie structure described in the paper: [Compressed double-array tries for string dictionaries supporting fast lookup](https://doi.org/10.1007/s10115-016-0999-8), *Knowledge and Information Systems*, 2017, available at [here](https://kampersanda.github.io/pdf/KAIS2017.pdf).
 
-Xcdat is a C++17 header-only library that implements static compressed string dictionaries based on an improved double-array trie.
-
-The double array is known as the fastest trie representation and has been used in many trie libraries. On the other hand, it has a space efficiency problem because of a pointer-based data structure. Xcdat solves the problem using the XOR-compressed double-array methods described in the following article.
-
-> Shunsuke Kanda, Kazuhiro Morita, and Masao Fuketa. **Compressed double-array tries for string dictionaries supporting fast lookup.** *Knowledge and Information Systems*, 51(3): 1023–1042, 2017 [doi](https://doi.org/10.1007/s10115-016-0999-8) [pdf](https://kampersanda.github.io/pdf/KAIS2017.pdf)
-
-Xcdat can implement trie dictionaries in smaller space compared to the other double-array libraries. In addition, the lookup speed is relatively fast in compressed data structures from the double-array advantage.
-
-### Table of contents
+## Table of contents
 
 - [Features](#features)
 - [Build instructions](#build-instructions)
 - [Command line tools](#command-line-tools)
 - [Sample usage](#sample-usage)
-- [Interface](#interface)
+- [API](#api)
+- [Performance](#performance)
+- [Licensing](#licensing)
+- [Todo](#todo)
+- [References](#references)
 
 ## Features
 
-- **Fast and memory-efficient:** Xcdat employs the double-array structure, known as the fastest trie data structure, and.
-- **Compressed data structure**: Xcdat practically compresses double-array elements for representing node pointers by using the XCDA methods. While the original double array uses 8 bytes (or 16 bytes) per node, it uses about 3–4 bytes (but, depending on datasets). In addition, the dictionary is implemented using a minimal-prefix trie (Yata et al., 2007) that is effective for long strings in time and space.
-- **Two compression approaches**: There are two approaches of compressing elements: using byte-oriented DACs (Brisaboa et al., 2013) and using pointer-based ones (Kanda et al., 2017). For characterless strings such as natural language keywords, the former will be slightly smaller and the latter will be slightly faster. For long strings such as URLs, the latter will outperform the former. Xcdat implements the two versions by using a static polymorphism with C++ template to avoid an overhead of virtual functions.
-- **64-bit Version**: Although Xcdat represents node addresses using 32-bit integers in default configuration, we can allow for 64-bit integers by defining `XCDAT_X64`; therefore, the dictionary can be constructed from a very large dataset. The construction space becomes large, but the output dictionary size is nearly equal.
-- **Binary string**: The dictionary can be constructed from keys including the NULL character by setting the second parameter of `xcdat::TrieBuilder::build()` to `true`.
-- **Dictionary encoding**: Xcdat supports mapping N different strings to unique IDs in [0,N-1]. That is to say, it supports two basic dictionary operations: Lookup returns the ID corresponding to a given string and Access (also called ReverseLookup) returns the string corresponding to a given ID. Therefore, Xcdat is very useful in many applications for string precessing and indexing, such as described in (Martínez-Prieto et al., 2016).
-- **Fast search**: Xcdat can provide lookup operations faster than other compressed trie libraries because it is based on the double-array trie. On the other hand, compared to the existing double-array libraries, the speed will be slower due to the compression.
-- **Prefix-based Lookup Operations**: As with other trie libraries, Xcdat also provides prefix-based lookup operations required for natural language processing and so on.
+- **Compressed string dictionary.** Xcdat implements a (static) *compressed string dictioanry* that stores a set of strings (or keywords) in a compressed space while supporting several search operations [1,2]. For example, Xcdat can store an entire set of English Wikipedia titles at half the size of the raw data.
+- **Fast and compact data structure.** Xcdat employs the *double-array trie* [3] known as the fastest data structure for trie implementation. However, the double-array trie resorts to many pointers and consumes a large amount of memory. To address this, Xcdat applies the *XCDA* method [2] that represents the double-array trie in a compressed format while maintaining the fast searches.
+- **Cache efficiency.** Xcdat employs a *minimal-prefix trie* [4] that replaces redundant trie nodes into strings, resulting in reducing random access and improving locality of references.
+- **Dictionary encoding.** Xcdat maps `N` distinct keywords into unique IDs from `[0,N-1]`, and supports the two symmetric operations: `lookup` returns the ID corresponding to a given keyword; `decode` returns the keyword associated with a given ID. The mapping is so-called *dictionary encoding* (or *domain encoding*) and is fundamental in many DB applications as described by Martínez-Prieto et al [1] or Müller et al. [5].
+- **Prefix search operations.** Xcdat supports prefix search operations realized by the trie search algorithm. Thus, it will be useful in many NLP applications such as auto completions [6], stemmed searches [7], or morphological analysis [8].
+- **64-bit support.** As mentioned before, since the double array is a pointer-based data structure, most double-array libraries use 32-bit pointers to reduce memory consumption, resulting in limiting the scale of the input dataset. On the other hand, the XCDA method allows Xcdat to represent 64-bit pointers without sacrificing memory efficiency.
+- **Binary key support.** In normal mode, Xcdat will use the `\0` character as an end marker for each keyword. However, if the dataset include `\0` characters, it will use bit flags instead of end markers, allowing the dataset to consist of binary keywords.
+- **Memory mapping.** Xcdat supports *memory mapping*, allowing data to be deserialized quickly without loading it into memory. Of course, deserialization by the loading is also supported.
+- **Header only.** Since the library consists of only header files, it can be easily installed in your project.
 
 ## Build instructions
 
 You can download and compile Xcdat as the following commands.
 
-```sh
+```
 $ git clone https://github.com/kampersanda/xcdat.git
 $ cd xcdat
 $ mkdir build
@@ -45,9 +42,13 @@ $ make install
 
 ## Command line tools
 
-### Build
+Xcdat provides some command line tools, installed via `make install`.
 
-```sh
+### `xcdat_build`
+
+It builds and saves the trie index.
+
+```
 $ xcdat_build enwiki-latest-all-titles-in-ns0 idx.bin -u 1
 time_in_sec: 13.449
 memory_in_bytes: 1.70618e+08
@@ -57,25 +58,25 @@ alphabet_size: 198
 max_length: 253
 ```
 
-### Lookup
+### `xcdat_lookup`
 
-```sh
+```
 $ xcdat_lookup idx.bin
 Algorithm
 1255938	Algorithm
 ```
 
-### Decode
+### `xcdat_decode`
 
-```sh
+```
 $ xcdat_decode idx.bin
 1255938
 1255938	Algorithm
 ```
 
-### Common prefix search
+### `xcdat_prefix_search`
 
-```sh
+```
 $ xcdat_prefix_search idx.bin
 Algorithmic
 6 found
@@ -87,9 +88,9 @@ Algorithmic
 1255931	Algorithmic
 ```
 
-### Predictive search
+### `xcdat_predictive_search`
 
-```sh
+```
 $ xcdat_predictive_search idx.bin -n 3
 Algorithm
 263 found
@@ -98,9 +99,9 @@ Algorithm
 1255972	Algorithm_(C++)
 ```
 
-### Enumerate
+### `xcdat_enumerate`
 
-```sh
+```
 $ xcdat_enumerate idx.bin | head -3
 0	!
 107	!!
@@ -236,12 +237,12 @@ Enumerate() = {
 }
 ```
 
-## Interface
+## API
 
 ### Dictionary class
 
 ```c++
-temp late <class BcVector>
+template <class BcVector>
 class trie {
   public:
     using trie_type = trie<BcVector>;
@@ -377,7 +378,9 @@ template <class Trie>
 Trie mmap(const char* address);
 ```
 
-## Benchmark
+## Performance
+
+To be added...
 
 ## Licensing
 
@@ -385,7 +388,7 @@ This library is free software provided under the MIT License.
 
 If you use the library in academic settings, please cite the following paper.
 
-```tex
+```
 @article{kanda2017compressed,
     title={Compressed double-array tries for string dictionaries supporting fast lookup},
     author={Kanda, Shunsuke and Morita, Kazuhiro and Fuketa, Masao},
@@ -397,6 +400,11 @@ If you use the library in academic settings, please cite the following paper.
     publisher={Springer}
 }
 ```
+
+## Todo
+
+- Support other language bindings.
+- Add SIMD-ization.
 
 ## References
 
