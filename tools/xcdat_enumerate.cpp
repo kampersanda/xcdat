@@ -7,8 +7,15 @@
 cmd_line_parser::parser make_parser(int argc, char** argv) {
     cmd_line_parser::parser p(argc, argv);
     p.add("input_idx", "Input filepath of trie index");
-    p.add("trie_type", "Trie type: [7|8] (default=7)", "-t", false);
     return p;
+}
+
+xcdat::flag_type get_flag(std::string_view filepath) {
+    std::ifstream ifs(filepath);
+    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
+    xcdat::flag_type flag;
+    ifs.read(reinterpret_cast<char*>(&flag), sizeof(flag));
+    return flag;
 }
 
 template <class Trie>
@@ -34,9 +41,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const auto trie_type = p.get<int>("trie_type", 7);
+    const auto input_idx = p.get<std::string>("input_idx");
+    const auto flag = get_flag(input_idx);
 
-    switch (trie_type) {
+    switch (flag) {
         case 7:
             return enumerate<xcdat::trie_7_type>(p);
         case 8:
