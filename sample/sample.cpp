@@ -28,25 +28,31 @@ int main() {
     // Load the trie index.
     const auto trie = xcdat::load<trie_type>(index_filename);
 
-    // Lookup
+    // Basic statistics
+    std::cout << "NumberKeys: " << trie.num_keys() << std::endl;
+    std::cout << "MaxLength: " << trie.max_length() << std::endl;
+    std::cout << "AlphabetSize: " << trie.alphabet_size() << std::endl;
+    std::cout << "Memory: " << xcdat::memory_in_bytes(trie) << " bytes" << std::endl;
+
+    // Lookup IDs from keys
     {
         const auto id = trie.lookup("Mac_Pro");
-        std::cout << "lookup(Mac_Pro) = " << id.value_or(UINT64_MAX) << std::endl;
+        std::cout << "Lookup(Mac_Pro) = " << id.value_or(UINT64_MAX) << std::endl;
     }
     {
         const auto id = trie.lookup("Google_Pixel");
-        std::cout << "lookup(Google_Pixel) = " << id.value_or(UINT64_MAX) << std::endl;
+        std::cout << "Lookup(Google_Pixel) = " << id.value_or(UINT64_MAX) << std::endl;
     }
 
-    // Decoding
+    // Decode keys from IDs
     {
         const auto dec = trie.decode(4);
-        std::cout << "decode(4) = " << dec << std::endl;
+        std::cout << "Decode(4) = " << dec << std::endl;
     }
 
     // Common prefix search
     {
-        std::cout << "common_prefix_search(MacBook_Air) = {" << std::endl;
+        std::cout << "CommonPrefixSearch(MacBook_Air) = {" << std::endl;
         auto itr = trie.make_prefix_iterator("MacBook_Air");
         while (itr.next()) {
             std::cout << "   (" << itr.decoded_view() << ", " << itr.id() << ")," << std::endl;
@@ -56,7 +62,7 @@ int main() {
 
     // Predictive search
     {
-        std::cout << "predictive_search(Mac) = {" << std::endl;
+        std::cout << "PredictiveSearch(Mac) = {" << std::endl;
         auto itr = trie.make_predictive_iterator("Mac");
         while (itr.next()) {
             std::cout << "   (" << itr.decoded_view() << ", " << itr.id() << ")," << std::endl;
@@ -64,9 +70,9 @@ int main() {
         std::cout << "}" << std::endl;
     }
 
-    // Enumerate all the keys in the trie (in lex order).
+    // Enumerate all the keys (in lex order).
     {
-        std::cout << "enumerate() = {" << std::endl;
+        std::cout << "Enumerate() = {" << std::endl;
         auto itr = trie.make_enumerative_iterator();
         while (itr.next()) {
             std::cout << "   (" << itr.decoded_view() << ", " << itr.id() << ")," << std::endl;
@@ -75,6 +81,5 @@ int main() {
     }
 
     std::remove(index_filename);
-
     return 0;
 }
