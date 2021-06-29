@@ -33,10 +33,14 @@ message(STATUS "CXX_FLAGS_RELEASE are ${CMAKE_CXX_FLAGS_RELEASE}")
 include_directories(include)
 
 add_subdirectory(sample)
-
 add_subdirectory(tools)
 
 enable_testing()
 add_subdirectory(tests)
 
 file(COPY ${CMAKE_SOURCE_DIR}/tests/keys.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/tests)
+
+# Install the library
+file(GLOB XCDAT_HEADER_FILES include/xcdat/*.hpp)
+install(FILES include/xcdat.hpp DESTINATION include)
+install(FILES ${XCDAT_HEADER_FILES} DESTINATION include/xcdat)

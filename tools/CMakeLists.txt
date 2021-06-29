@@ -1,7 +1,13 @@
-add_executable(xcdat_build xcdat_build.cpp)
-add_executable(xcdat_lookup xcdat_lookup.cpp)
-add_executable(xcdat_decode xcdat_decode.cpp)
-add_executable(xcdat_prefix_search xcdat_prefix_search.cpp)
-add_executable(xcdat_predictive_search xcdat_predictive_search.cpp)
-add_executable(xcdat_enumerate xcdat_enumerate.cpp)
+set(XCDAT_FILES
+    "xcdat_build"
+    "xcdat_lookup"
+    "xcdat_decode"
+    "xcdat_prefix_search"
+    "xcdat_predictive_search"
+    "xcdat_enumerate"
+)
 
+foreach(XCDAT_FILE ${XCDAT_FILES})
+    add_executable(${XCDAT_FILE} ${XCDAT_FILE}.cpp)
+    install(TARGETS ${XCDAT_FILE} RUNTIME DESTINATION bin)
+endforeach(XCDAT_FILE)
