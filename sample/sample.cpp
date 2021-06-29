@@ -3,8 +3,6 @@
 
 #include <xcdat.hpp>
 
-using trie_type = xcdat::trie_8_type;
-
 int main() {
     // Input keys
     std::vector<std::string> keys = {
@@ -12,19 +10,20 @@ int main() {
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
     };
 
-    // The dataset must be sorted and unique (although it is not needed for the keys).
+    // The input keys must be sorted and unique (although they have already satisfied in this case).
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
+    using trie_type = xcdat::trie_8_type;
     const std::string index_filename = "tmp.idx";
 
-    // Build and save the trie index
+    // Build and save the trie index.
     {
         const trie_type trie(keys);
         xcdat::save(trie, index_filename);
     }
 
-    // Load the trie index
+    // Load the trie index.
     const auto trie = xcdat::load<trie_type>(index_filename);
 
     std::cout << "Basic operations" << std::endl;
