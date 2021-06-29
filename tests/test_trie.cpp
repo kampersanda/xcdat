@@ -160,7 +160,7 @@ TEST_CASE("Test trie_type (tiny)") {
 }
 
 TEST_CASE("Test trie_type (real)") {
-    auto keys = xcdat::test::to_unique_vec(xcdat::io::load_strings("keys.txt"));
+    auto keys = xcdat::test::to_unique_vec(xcdat::load_strings("keys.txt"));
     auto others = xcdat::test::extract_keys(keys);
 
     trie_type trie(keys);

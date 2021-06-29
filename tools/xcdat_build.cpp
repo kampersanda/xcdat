@@ -20,7 +20,7 @@ int build(const cmd_line_parser::parser& p) {
     const auto output_idx = p.get<std::string>("output_idx");
     const auto to_unique = p.get<bool>("to_unique", false);
 
-    auto keys = xcdat::io::load_strings(input_keys);
+    auto keys = xcdat::load_strings(input_keys);
     if (keys.empty()) {
         tfm::errorfln("Error: The input dataset is empty.");
     }
