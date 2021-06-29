@@ -10,14 +10,6 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     return p;
 }
 
-xcdat::flag_type get_flag(std::string_view filepath) {
-    std::ifstream ifs(filepath);
-    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
-    xcdat::flag_type flag;
-    ifs.read(reinterpret_cast<char*>(&flag), sizeof(flag));
-    return flag;
-}
-
 template <class Trie>
 int decode(const cmd_line_parser::parser& p) {
     const auto input_idx = p.get<std::string>("input_idx");
@@ -45,7 +37,7 @@ int main(int argc, char** argv) {
     }
 
     const auto input_idx = p.get<std::string>("input_idx");
-    const auto flag = get_flag(input_idx);
+    const auto flag = xcdat::get_flag(input_idx);
 
     switch (flag) {
         case 7:
