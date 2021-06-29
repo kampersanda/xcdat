@@ -1,6 +1,7 @@
 #include <xcdat.hpp>
 
 #include "cmd_line_parser/parser.hpp"
+#include "mm_file/mm_file.hpp"
 #include "tinyformat/tinyformat.h"
 
 cmd_line_parser::parser make_parser(int argc, char** argv) {
@@ -16,7 +17,8 @@ int predictive_search(const cmd_line_parser::parser& p) {
     const auto input_idx = p.get<std::string>("input_idx");
     const auto max_num_results = p.get<std::uint64_t>("max_num_results", 10);
 
-    const auto trie = xcdat::load<Trie>(input_idx);
+    const mm::file_source<char> fin(input_idx.c_str(), mm::advice::sequential);
+    const auto trie = xcdat::mmap<Trie>(fin.data());
 
     struct result_type {
         std::uint64_t id;
