@@ -8,8 +8,11 @@
 #include "xcdat/bc_vector_7.hpp"
 #include "xcdat/bc_vector_8.hpp"
 
+#ifdef BC_VECTOR_7
 using bc_vector_type = xcdat::bc_vector_7;
-// using bc_vector_type = xcdat::bc_vector_8;
+#elif BC_VECTOR_8
+using bc_vector_type = xcdat::bc_vector_8;
+#endif
 
 struct bc_unit {
     std::uint64_t base;

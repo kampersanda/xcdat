@@ -8,6 +8,7 @@
 
 namespace xcdat {
 
+// Vigna's Rank9 implementation from https://github.com/ot/succinct.
 class bit_vector {
   public:
     class builder {

@@ -6,11 +6,15 @@
 #include <string>
 
 #include "doctest/doctest.h"
+#include "mm_file/mm_file.hpp"
 #include "test_common.hpp"
 #include "xcdat.hpp"
 
+#ifdef TRIE_7
 using trie_type = xcdat::trie_7_type;
-// using trie_type = xcdat::trie_8_type;
+#elif TRIE_8
+using trie_type = xcdat::trie_8_type;
+#endif
 
 void test_basic_operations(const trie_type& trie, const std::vector<std::string>& keys,
                            const std::vector<std::string>& others) {
@@ -115,6 +119,36 @@ void test_enumerate(const trie_type& trie, const std::vector<std::string>& keys)
     REQUIRE_FALSE(itr.next());
 }
 
+void test_io(const trie_type& trie, const std::vector<std::string>& keys, const std::vector<std::string>& others) {
+    const char* tmp_filepath = "tmp.idx";
+
+    const std::uint64_t memory = xcdat::memory_in_bytes(trie);
+    REQUIRE_EQ(memory, xcdat::save(trie, tmp_filepath));
+
+    {
+        const auto loaded = xcdat::load<trie_type>(tmp_filepath);
+        REQUIRE_EQ(trie.bin_mode(), loaded.bin_mode());
+        REQUIRE_EQ(trie.num_keys(), loaded.num_keys());
+        REQUIRE_EQ(trie.alphabet_size(), loaded.alphabet_size());
+        REQUIRE_EQ(trie.max_length(), loaded.max_length());
+        REQUIRE_EQ(memory, xcdat::memory_in_bytes(loaded));
+        test_basic_operations(loaded, keys, others);
+    }
+
+    {
+        mm::file_source<char> fin(tmp_filepath, mm::advice::sequential);
+        const auto mapped = xcdat::mmap<trie_type>(fin.data());
+        REQUIRE_EQ(trie.bin_mode(), mapped.bin_mode());
+        REQUIRE_EQ(trie.num_keys(), mapped.num_keys());
+        REQUIRE_EQ(trie.alphabet_size(), mapped.alphabet_size());
+        REQUIRE_EQ(trie.max_length(), mapped.max_length());
+        REQUIRE_EQ(memory, xcdat::memory_in_bytes(mapped));
+        test_basic_operations(mapped, keys, others);
+    }
+
+    std::remove(tmp_filepath);
+}
+
 TEST_CASE("Test trie_type (tiny)") {
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
@@ -128,6 +162,7 @@ TEST_CASE("Test trie_type (tiny)") {
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
+
     {
         auto itr = trie.make_prefix_iterator("MacBook_Pro");
         std::vector<std::string> expected = {"Mac", "MacBook", "MacBook_Pro"};
@@ -157,6 +192,8 @@ TEST_CASE("Test trie_type (tiny)") {
         }
         REQUIRE_FALSE(itr.next());
     }
+
+    test_io(trie, keys, others);
 }
 
 TEST_CASE("Test trie_type (real)") {
@@ -170,6 +207,7 @@ TEST_CASE("Test trie_type (real)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 
 TEST_CASE("Test trie_type (random 10K, A--B)") {
@@ -183,6 +221,7 @@ TEST_CASE("Test trie_type (random 10K, A--B)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 
 TEST_CASE("Test trie_type (random 10K, A--Z)") {
@@ -196,6 +235,7 @@ TEST_CASE("Test trie_type (random 10K, A--Z)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 
 TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
@@ -209,6 +249,7 @@ TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 
 #ifdef NDEBUG
@@ -223,6 +264,7 @@ TEST_CASE("Test trie_type (random 100K, A--B)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 
 TEST_CASE("Test trie_type (random 100K, A--Z)") {
@@ -236,6 +278,7 @@ TEST_CASE("Test trie_type (random 100K, A--Z)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 
 TEST_CASE("Test trie_type (random 100K, 0x00--0xFF)") {
@@ -249,5 +292,6 @@ TEST_CASE("Test trie_type (random 100K, 0x00--0xFF)") {
     test_prefix_search(trie, keys, others);
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
+    test_io(trie, keys, others);
 }
 #endif

@@ -33,7 +33,7 @@ class bc_vector_8 {
     template <class BcUnits>
     explicit bc_vector_8(const BcUnits& bc_units, bit_vector::builder&& leaves) {
         std::array<std::vector<std::uint8_t>, max_levels> bytes;
-        std::array<bit_vector::builder, max_levels - 1> next_flags;
+        std::array<bit_vector::builder, max_levels> next_flags;  // The last will not be released
         std::vector<std::uint64_t> links;
 
         bytes[0].reserve(bc_units.size() * 2);
