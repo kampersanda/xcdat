@@ -65,6 +65,8 @@ int main(int argc, char** argv) {
     switch (trie_type) {
         case 7:
             return build<xcdat::trie_7_type>(p);
+        case 8:
+            return build<xcdat::trie_8_type>(p);
         default:
             break;
     }
