@@ -8,7 +8,7 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     cmd_line_parser::parser p(argc, argv);
     p.add("input_idx", "Input filepath of trie index");
     p.add("max_num_results", "The max number of results (default=10)", "-n", false);
-    p.add("trie_type", "Type of trie impl. from [7|8], (default=7)", "-t", false);
+    p.add("trie_type", "Trie type: [7|8] (default=7)", "-t", false);
     return p;
 }
 

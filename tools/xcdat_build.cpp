@@ -9,7 +9,7 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     cmd_line_parser::parser p(argc, argv);
     p.add("input_keys", "Input filepath of data keys");
     p.add("output_idx", "Output filepath of trie index");
-    p.add("trie_type", "Type of trie impl from 7 or 8 (default=7)", "-t", false);
+    p.add("trie_type", "Trie type: [7|8] (default=7)", "-t", false);
     p.add("to_unique", "Make unique the input keys? (default=0)", "-u", false);
     return p;
 }
