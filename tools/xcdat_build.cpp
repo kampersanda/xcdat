@@ -34,7 +34,8 @@ int build(const cmd_line_parser::parser& p) {
     const Trie trie(keys);
     const auto stop_tp = std::chrono::high_resolution_clock::now();
 
-    const double time_in_sec = std::chrono::duration_cast<std::chrono::seconds>(stop_tp - start_tp).count();
+    const double time_in_sec =
+        std::chrono::duration_cast<std::chrono::milliseconds>(stop_tp - start_tp).count() / 1000.0;
     const double memory_in_bytes = xcdat::memory_in_bytes(trie);
 
     tfm::printfln("time_in_sec: %g", time_in_sec);
