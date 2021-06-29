@@ -250,16 +250,32 @@ class trie {
     static constexpr auto l1_bits = bc_vector_type::l1_bits;
 
   public:
+    //! Default constructor
     trie() = default;
+
+    //! Default destructor
     virtual ~trie() = default;
+
+    //! Copy constructor (deleted)
     trie(const trie&) = delete;
+
+    //! Copy constructor (deleted)
     trie& operator=(const trie&) = delete;
+
+    //! Move constructor
     trie(trie&&) noexcept = default;
+
+    //! Move constructor
     trie& operator=(trie&&) noexcept = default;
 
+    //! Build the trie from the input keywords, which are lexicographically sorted and unique.
+    //! If bin_mode = false, the NULL character is used for the termination of a keyword.
+    //! If bin_mode = true, bit flags are used istead, and the keywords can contain NULL characters.
+    //! If the input keywords contain NULL characters, bin_mode will be forced to be set to true.
     template <class Strings>
     explicit trie(const Strings& keys, bool bin_mode = false);
 
+    //! Check if the binary mode.
     inline bool bin_mode() const;
 
     //! Get the number of stored keywords.
@@ -271,55 +287,64 @@ class trie {
     //! Get the maximum length of keywords.
     inline std::uint64_t max_length() const;
 
-    /**
-     * Search the given keyword in the trie.
-     * @param[in] key The query keyword.
-     * @return The associated ID if found.
-     */
+    //! Lookup the ID of the keyword.
     inline std::optional<std::uint64_t> lookup(std::string_view key) const;
 
-    /**
-     * Decode the keyword associated with the given ID.
-     * @param[in] id The keyword ID.
-     * @return The keyword associated with the ID.
-     */
+    //! Decode the keyword associated with the ID.
     inline std::string decode(std::uint64_t id) const;
 
-    /**
-     * An iterator class for common prefix search.
-     */
+    //! An iterator class for common prefix search.
     class prefix_iterator {
       public:
         prefix_iterator() = default;
 
+        //! Increment the iterator.
+        //! Return false if the iteration is terminated.
         inline bool next();
+
+        //! Get the result ID.
         inline std::uint64_t id() const;
+
+        //! Get the result keyword.
         inline std::string decoded() const;
+
+        //! Get the reference to the result keyword.
+        //! Note that the referenced data will be changed in the next iteration.
         inline std::string_view decoded_view() const;
     };
 
-    //! Make the iterator for the prefix search
+    //! Make the common prefix searcher for the given keyword.
     inline prefix_iterator make_prefix_iterator(std::string_view key) const;
 
+    //! Preform common prefix search for the keyword.
     inline void prefix_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
-    /**
-     * An iterator class for predictive search.
-     */
+    //! An iterator class for predictive search.
     class predictive_iterator {
       public:
         predictive_iterator() = default;
 
+        //! Increment the iterator.
+        //! Return false if the iteration is terminated.
         inline bool next();
+
+        //! Get the result ID.
         inline std::uint64_t id() const;
+
+        //! Get the result keyword.
         inline std::string decoded() const;
+
+        //! Get the reference to the result keyword.
+        //! Note that the referenced data will be changed in the next iteration.
         inline std::string_view decoded_view() const;
     };
 
+    //! Make the predictive searcher for the keyword.
     inline predictive_iterator make_predictive_iterator(std::string_view key) const {
         return predictive_iterator(this, key);
     }
 
+    //! Preform predictive search for the keyword.
     inline void predictive_search(std::string_view key,
                                   const std::function<void(std::uint64_t, std::string_view)>& fn) const {
         auto itr = make_predictive_iterator(key);
@@ -328,17 +353,29 @@ class trie {
         }
     }
 
+    //! An iterator class for enumeration.
     using enumerative_iterator = predictive_iterator;
 
+    //! An iterator class for enumeration.
     inline enumerative_iterator make_enumerative_iterator() const;
+
+    //! Enumerate all the keywords and their IDs stored in the trie.
     inline void enumerate(const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
+    //! Visit the members.
     template <class Visitor>
     void visit(Visitor& visitor);
 };
 ```
 
 ### I/O handlers
+
+`xcdat.hpp` provides some functions for handling I/O operations.
+
+```c++
+template <class Trie>
+Trie mmap(const char* address);
+```
 
 ## Benchmark
 

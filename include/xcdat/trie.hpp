@@ -52,7 +52,7 @@ class trie {
         static_assert(sizeof(char) == sizeof(typename Strings::value_type::value_type));
     }
 
-    //! Check the binary mode.
+    //! Check if the binary mode.
     inline bool bin_mode() const {
         return m_tvec.bin_mode();
     }
@@ -135,24 +135,24 @@ class trie {
       public:
         prefix_iterator() = default;
 
-        //! Get the next result.
-        //! If not found, false will be returned.
+        //! Increment the iterator.
+        //! Return false if the iteration is terminated.
         inline bool next() {
             return m_obj != nullptr && m_obj->next_prefix(this);
         }
 
-        //! Get the ID.
+        //! Get the result ID.
         inline std::uint64_t id() const {
             return m_id;
         }
 
-        //! Get the keyword.
+        //! Get the result keyword.
         inline std::string decoded() const {
             return std::string(m_key.data(), m_kpos);
         }
 
-        //! Get the reference to the keyword.
-        //! Note that the referenced data will be changed in the next step.
+        //! Get the reference to the result keyword.
+        //! Note that the referenced data will be changed in the next iteration.
         inline std::string_view decoded_view() const {
             return std::string_view(m_key.data(), m_kpos);
         }
@@ -198,24 +198,24 @@ class trie {
       public:
         predictive_iterator() = default;
 
-        //! Get the next result.
-        //! If not found, false will be returned.
+        //! Increment the iterator.
+        //! Return false if the iteration is terminated.
         inline bool next() {
             return m_obj != nullptr && m_obj->next_predictive(this);
         }
 
-        //! Get the ID.
+        //! Get the result ID.
         inline std::uint64_t id() const {
             return m_id;
         }
 
-        //! Get the keyword.
+        //! Get the result keyword.
         inline std::string decoded() const {
             return m_decoded;
         }
 
-        //! Get the reference to the keyword.
-        //! Note that the referenced data will be changed in the next step.
+        //! Get the reference to the result keyword.
+        //! Note that the referenced data will be changed in the next iteration.
         inline std::string_view decoded_view() const {
             return m_decoded;
         }
@@ -256,6 +256,7 @@ class trie {
         }
     }
 
+    //! Visit the members.
     template <class Visitor>
     void visit(Visitor& visitor) {
         visitor.visit(m_num_keys);
