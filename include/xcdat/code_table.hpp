@@ -29,12 +29,7 @@ class code_table {
     code_table& operator=(code_table&&) noexcept = default;
 
     template <class Strings>
-    explicit code_table(const Strings& keys) {
-        build(keys);
-    }
-
-    template <class Strings>
-    void build(const Strings& keys) {
+    code_table(const Strings& keys) {
         std::array<counter_type, 256> counter;
         for (std::uint32_t ch = 0; ch < 256; ++ch) {
             counter[ch] = {static_cast<std::uint8_t>(ch), 0};
@@ -55,7 +50,7 @@ class code_table {
                     alphabet.push_back(cf.ch);
                 }
             }
-            m_alphabet.steal(alphabet);
+            m_alphabet.build(alphabet);
         }
 
         std::sort(counter.begin(), counter.end(),

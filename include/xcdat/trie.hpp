@@ -4,7 +4,6 @@
 #include <optional>
 #include <string>
 
-#include "essentials/essentials.hpp"
 #include "trie_builder.hpp"
 
 namespace xcdat {
@@ -23,7 +22,7 @@ namespace xcdat {
 template <class BcVector>
 class trie {
   public:
-    using this_type = trie<BcVector>;
+    using trie_type = trie<BcVector>;
     using bc_vector_type = BcVector;
 
     static constexpr auto l1_bits = bc_vector_type::l1_bits;
@@ -55,23 +54,7 @@ class trie {
     trie& operator=(trie&&) noexcept = default;
 
     template <class Strings>
-    static this_type build(const Strings& keys, bool bin_mode = false) {
-        return this_type(trie_builder(keys, l1_bits, bin_mode));
-    }
-
-    static this_type load(std::string_view filepath) {
-        this_type obj;
-        essentials::load(obj, filepath.data());
-        return obj;
-    }
-
-    std::uint64_t save(std::string_view filepath) const {
-        return essentials::save(const_cast<this_type&>(*this), filepath.data());
-    }
-
-    std::uint64_t memory_in_bytes() const {
-        return essentials::visit<this_type, essentials::sizer>(const_cast<this_type&>(*this), "");
-    }
+    explicit trie(const Strings& keys, bool bin_mode = false) : trie(trie_builder(keys, l1_bits, bin_mode)) {}
 
     //! Check the binary mode.
     inline bool bin_mode() const {
@@ -155,7 +138,7 @@ class trie {
      */
     class prefix_iterator {
       private:
-        const this_type* m_obj = nullptr;
+        const trie_type* m_obj = nullptr;
         std::string_view m_key;
         std::uint64_t m_id = 0;
         std::uint64_t m_kpos = 0;
@@ -181,7 +164,7 @@ class trie {
         }
 
       private:
-        prefix_iterator(const this_type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
+        prefix_iterator(const trie_type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
 
         friend class trie;
     };
@@ -211,7 +194,7 @@ class trie {
         };
 
       private:
-        const this_type* m_obj = nullptr;
+        const trie_type* m_obj = nullptr;
         std::string_view m_key;
         std::uint64_t m_id = 0;
         std::string m_decoded;
@@ -237,7 +220,7 @@ class trie {
         }
 
       private:
-        predictive_iterator(const this_type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
+        predictive_iterator(const trie_type* obj, std::string_view key) : m_obj(obj), m_key(key) {}
 
         friend class trie;
     };

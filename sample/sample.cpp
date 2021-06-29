@@ -3,9 +3,10 @@
 
 #include <xcdat.hpp>
 
-using xcdat_trie = xcdat::trie_8_type;
+using trie_type = xcdat::trie_8_type;
 
 int main() {
+    // Input keys
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
@@ -19,12 +20,12 @@ int main() {
 
     // Build and save the trie index
     {
-        const auto trie = xcdat_trie::build(keys);
-        trie.save(index_filename);
+        const trie_type trie(keys);
+        xcdat::save(trie, index_filename);
     }
 
     // Load the trie index
-    const auto trie = xcdat_trie::load(index_filename);
+    const auto trie = xcdat::load<trie_type>(index_filename);
 
     std::cout << "Basic operations" << std::endl;
     {

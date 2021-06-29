@@ -1,17 +1,13 @@
 #pragma once
 
-#include <cassert>
-#include <cstdint>
 #include <numeric>
-
-#include "essentials/essentials.hpp"
+#include <vector>
 
 #include "bit_tools.hpp"
 #include "immutable_vector.hpp"
 
 namespace xcdat {
 
-//! Rank9 implementatoin
 class bit_vector {
   public:
     class builder {
@@ -56,12 +52,12 @@ class bit_vector {
         }
 
         inline void resize(std::uint64_t size) {
-            m_bits.resize(essentials::words_for(size), 0ULL);
+            m_bits.resize(words_for(size), 0ULL);
             m_size = size;
         }
 
         inline void reserve(std::uint64_t capacity) {
-            m_bits.reserve(essentials::words_for(capacity));
+            m_bits.reserve(words_for(capacity));
         }
 
         inline std::uint64_t size() const {
@@ -92,17 +88,10 @@ class bit_vector {
     bit_vector& operator=(bit_vector&&) noexcept = default;
 
     explicit bit_vector(builder& b, bool enable_rank = false, bool enable_select = false) {
-        build(b, enable_rank, enable_select);
-    }
-
-    void build(builder& b, bool enable_rank = false, bool enable_select = false) {
-        m_bits.steal(b.m_bits);
+        m_bits.build(b.m_bits);
         m_size = b.m_size;
         m_num_ones = std::accumulate(m_bits.begin(), m_bits.end(), 0ULL,
                                      [](std::uint64_t acc, std::uint64_t x) { return acc + bit_tools::popcount(x); });
-        m_rank_hints.clear();
-        m_select_hints.clear();
-
         if (enable_rank) {
             build_rank_hints();
         }
@@ -170,6 +159,10 @@ class bit_vector {
     template <std::uint64_t N>
     static std::tuple<std::uint64_t, std::uint64_t> decompose(std::uint64_t x) {
         return {x / N, x % N};
+    }
+
+    static std::uint64_t words_for(std::uint64_t nbits) {
+        return (nbits + 63) / 64;
     }
 
     inline std::uint64_t num_blocks() const {
@@ -258,7 +251,7 @@ class bit_vector {
         }
 
         // Release
-        m_rank_hints.steal(rank_hints);
+        m_rank_hints.build(rank_hints);
     }
 
     void build_select_hints() {
@@ -271,7 +264,7 @@ class bit_vector {
             }
         }
         select_hints.push_back(num_blocks());
-        m_select_hints.steal(select_hints);
+        m_select_hints.build(select_hints);
     }
 };
 

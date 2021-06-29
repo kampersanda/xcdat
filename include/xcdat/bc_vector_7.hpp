@@ -11,6 +11,7 @@ class bc_vector_7 {
   public:
     static constexpr std::uint32_t l1_bits = 7;
     static constexpr std::uint32_t max_levels = 4;
+
     static constexpr std::uint64_t block_size_l1 = 1ULL << 7;
     static constexpr std::uint64_t block_size_l2 = 1ULL << 15;
     static constexpr std::uint64_t block_size_l3 = 1ULL << 31;
@@ -37,11 +38,6 @@ class bc_vector_7 {
 
     template <class BcUnits>
     explicit bc_vector_7(const BcUnits& bc_units, bit_vector::builder&& leaves) {
-        build(bc_units, std::move(leaves));
-    }
-
-    template <class BcUnits>
-    void build(const BcUnits& bc_units, bit_vector::builder&& leaves) {
         std::vector<std::uint8_t> ints_l1;
         std::vector<std::uint16_t> ints_l2;
         std::vector<std::uint32_t> ints_l3;
@@ -110,15 +106,15 @@ class bc_vector_7 {
         }
 
         // release
-        m_ints_l1.steal(ints_l1);
-        m_ints_l2.steal(ints_l2);
-        m_ints_l3.steal(ints_l3);
-        m_ints_l4.steal(ints_l4);
+        m_ints_l1.build(ints_l1);
+        m_ints_l2.build(ints_l2);
+        m_ints_l3.build(ints_l3);
+        m_ints_l4.build(ints_l4);
         for (std::uint32_t j = 0; j < m_ranks.size(); ++j) {
-            m_ranks[j].steal(ranks[j]);
+            m_ranks[j].build(ranks[j]);
         }
-        m_links.build(links);
-        m_leaves.build(leaves, true, false);
+        m_links = compact_vector(links);
+        m_leaves = bit_vector(leaves, true, false);
     }
 
     inline std::uint64_t base(std::uint64_t i) const {

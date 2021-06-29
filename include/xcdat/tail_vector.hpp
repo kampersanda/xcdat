@@ -129,15 +129,7 @@ class tail_vector {
     tail_vector(tail_vector&&) noexcept = default;
     tail_vector& operator=(tail_vector&&) noexcept = default;
 
-    explicit tail_vector(builder&& b) {
-        m_chars.steal(b.m_chars);
-        m_terms.build(b.m_terms);
-    }
-
-    void build(builder&& b) {
-        m_chars.steal(b.m_chars);
-        m_terms.build(b.m_terms);
-    }
+    explicit tail_vector(builder&& b) : m_chars(b.m_chars), m_terms(b.m_terms) {}
 
     inline bool bin_mode() const {
         return m_terms.size() != 0;

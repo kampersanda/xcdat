@@ -32,11 +32,6 @@ class bc_vector_8 {
 
     template <class BcUnits>
     explicit bc_vector_8(const BcUnits& bc_units, bit_vector::builder&& leaves) {
-        build(bc_units, std::move(leaves));
-    }
-
-    template <class BcUnits>
-    void build(const BcUnits& bc_units, bit_vector::builder&& leaves) {
         std::array<std::vector<std::uint8_t>, max_levels> bytes;
         std::array<bit_vector::builder, max_levels - 1> next_flags;
         std::vector<std::uint64_t> links;
@@ -81,13 +76,13 @@ class bc_vector_8 {
         }
 
         // release
-        for (uint8_t i = 0; i < m_num_levels; ++i) {
-            m_bytes[i].steal(bytes[i]);
-            m_nexts[i].build(next_flags[i], true, false);
+        for (std::uint32_t i = 0; i < m_num_levels; ++i) {
+            m_bytes[i].build(bytes[i]);
+            m_nexts[i] = bit_vector(next_flags[i], true, false);
         }
-        m_bytes[m_num_levels].steal(bytes[m_num_levels]);
-        m_links.build(links);
-        m_leaves.build(leaves, true, false);
+        m_bytes[m_num_levels].build(bytes[m_num_levels]);
+        m_links = compact_vector(links);
+        m_leaves = bit_vector(leaves, true, false);
     }
 
     inline std::uint64_t base(std::uint64_t i) const {

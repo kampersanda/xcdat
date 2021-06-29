@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include <xcdat.hpp>
 
 #include "cmd_line_parser/parser.hpp"
@@ -28,22 +30,21 @@ int build(const cmd_line_parser::parser& p) {
         keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
     }
 
-    essentials::timer<essentials::clock_type, std::chrono::seconds> timer;
-    timer.start();
-    const auto trie = Trie::build(keys);
-    timer.stop();
+    const auto start_tp = std::chrono::high_resolution_clock::now();
+    const Trie trie(keys);
+    const auto stop_tp = std::chrono::high_resolution_clock::now();
 
-    const double construction_time_in_sec = timer.average();
-    const double memory_in_bytes = trie.memory_in_bytes();
+    const double time_in_sec = std::chrono::duration_cast<std::chrono::seconds>(stop_tp - start_tp).count();
+    const double memory_in_bytes = xcdat::memory_in_bytes(trie);
 
-    tfm::printfln("construction_time_in_sec: %g", construction_time_in_sec);
+    tfm::printfln("time_in_sec: %g", time_in_sec);
     tfm::printfln("memory_in_bytes: %d", memory_in_bytes);
-    tfm::printfln("memory_in_MiB: %g", memory_in_bytes / essentials::MiB);
+    tfm::printfln("memory_in_MiB: %g", memory_in_bytes / (1024.0 * 1024.0));
     tfm::printfln("number_of_keys: %d", trie.num_keys());
     tfm::printfln("alphabet_size: %d", trie.alphabet_size());
     tfm::printfln("max_length: %d", trie.max_length());
 
-    trie.save(output_idx);
+    xcdat::save(trie, output_idx);
 
     return 0;
 }

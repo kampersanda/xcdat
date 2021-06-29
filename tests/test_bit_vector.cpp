@@ -35,7 +35,7 @@ void test_rank_select(const std::vector<bool>& bits) {
         for (std::uint64_t i = 0; i < bits.size(); i++) {
             bvb.set_bit(i, bits[i]);
         }
-        bv.build(bvb, true, true);
+        bv = xcdat::bit_vector(bvb, true, true);
     }
 
     REQUIRE_EQ(bv.size(), bits.size());

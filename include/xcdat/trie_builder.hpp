@@ -81,7 +81,7 @@ class trie_builder {
         m_heads[taboo_npos >> m_l1_bits] = m_units[taboo_npos].base;
 
         // Build the code table
-        m_table.build(keys);
+        m_table = code_table(keys);
         m_bin_mode |= m_table.has_null();
 
         // Build the BC units

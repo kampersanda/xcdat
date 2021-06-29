@@ -124,7 +124,7 @@ TEST_CASE("Test trie_type (tiny)") {
         "Google_Pixel", "iPad_mini", "iPadOS", "iPod", "ThinkPad",
     };
 
-    auto trie = trie_type::build(keys);
+    trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
@@ -163,7 +163,7 @@ TEST_CASE("Test trie_type (real)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::io::load_strings("keys.txt"));
     auto others = xcdat::test::extract_keys(keys);
 
-    auto trie = trie_type::build(keys);
+    trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
@@ -176,7 +176,7 @@ TEST_CASE("Test trie_type (random 10K, A--B)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, 'A', 'B'));
     auto others = xcdat::test::extract_keys(keys);
 
-    auto trie = trie_type::build(keys);
+    trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
@@ -189,7 +189,7 @@ TEST_CASE("Test trie_type (random 10K, A--Z)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, 'A', 'Z'));
     auto others = xcdat::test::extract_keys(keys);
 
-    auto trie = trie_type::build(keys);
+    trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
@@ -202,7 +202,7 @@ TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, INT8_MIN, INT8_MAX));
     auto others = xcdat::test::extract_keys(keys);
 
-    auto trie = trie_type::build(keys);
+    trie_type trie(keys);
     REQUIRE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
@@ -210,3 +210,44 @@ TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
     test_predictive_search(trie, keys, others);
     test_enumerate(trie, keys);
 }
+
+#ifdef NDEBUG
+TEST_CASE("Test trie_type (random 100K, A--B)") {
+    auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, 'A', 'B'));
+    auto others = xcdat::test::extract_keys(keys);
+
+    trie_type trie(keys);
+    REQUIRE_FALSE(trie.bin_mode());
+
+    test_basic_operations(trie, keys, others);
+    test_prefix_search(trie, keys, others);
+    test_predictive_search(trie, keys, others);
+    test_enumerate(trie, keys);
+}
+
+TEST_CASE("Test trie_type (random 100K, A--Z)") {
+    auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, 'A', 'Z'));
+    auto others = xcdat::test::extract_keys(keys);
+
+    trie_type trie(keys);
+    REQUIRE_FALSE(trie.bin_mode());
+
+    test_basic_operations(trie, keys, others);
+    test_prefix_search(trie, keys, others);
+    test_predictive_search(trie, keys, others);
+    test_enumerate(trie, keys);
+}
+
+TEST_CASE("Test trie_type (random 100K, 0x00--0xFF)") {
+    auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, INT8_MIN, INT8_MAX));
+    auto others = xcdat::test::extract_keys(keys);
+
+    trie_type trie(keys);
+    REQUIRE(trie.bin_mode());
+
+    test_basic_operations(trie, keys, others);
+    test_prefix_search(trie, keys, others);
+    test_predictive_search(trie, keys, others);
+    test_enumerate(trie, keys);
+}
+#endif

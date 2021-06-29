@@ -13,7 +13,7 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
 template <class Trie>
 int lookup(const cmd_line_parser::parser& p) {
     const auto input_idx = p.get<std::string>("input_idx");
-    const auto trie = Trie::load(input_idx);
+    const auto trie = xcdat::load<Trie>(input_idx);
 
     for (std::string str; std::getline(std::cin, str);) {
         const auto id = trie.lookup(str);

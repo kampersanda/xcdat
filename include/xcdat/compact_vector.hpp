@@ -1,14 +1,11 @@
 #pragma once
 
-#include "essentials/essentials.hpp"
-
 #include "bit_tools.hpp"
 #include "exception.hpp"
 #include "immutable_vector.hpp"
 
 namespace xcdat {
 
-//! A compressed integer vector.
 class compact_vector {
   private:
     std::uint64_t m_size = 0;
@@ -27,21 +24,14 @@ class compact_vector {
     compact_vector& operator=(compact_vector&&) noexcept = default;
 
     template <class Vec>
-    explicit compact_vector(const Vec& vec) {
-        build(vec);
-    }
-
-    template <class Vec>
-    void build(const Vec& vec) {
+    compact_vector(const Vec& vec) {
         XCDAT_THROW_IF(vec.size() == 0, "The input vector is empty.");
 
-        const std::uint64_t maxv = *std::max_element(vec.begin(), vec.end());
-
         m_size = vec.size();
-        m_bits = needed_bits(maxv);
+        m_bits = needed_bits(*std::max_element(vec.begin(), vec.end()));
         m_mask = (1ULL << m_bits) - 1;
 
-        std::vector<std::uint64_t> chunks(essentials::words_for(m_size * m_bits));
+        std::vector<std::uint64_t> chunks(words_for(m_size * m_bits));
 
         for (std::uint64_t i = 0; i < m_size; i++) {
             const auto [quo, mod] = decompose(i * m_bits);
@@ -53,7 +43,7 @@ class compact_vector {
                 chunks[quo + 1] |= (vec[i] & m_mask) >> diff;
             }
         }
-        m_chunks.steal(chunks);
+        m_chunks.build(chunks);
     }
 
     inline std::uint64_t operator[](std::uint64_t i) const {
@@ -89,6 +79,10 @@ class compact_vector {
 
     static std::tuple<std::uint64_t, std::uint64_t> decompose(std::uint64_t x) {
         return {x / 64, x % 64};
+    }
+
+    static std::uint64_t words_for(std::uint64_t nbits) {
+        return (nbits + 63) / 64;
     }
 };
 

@@ -34,6 +34,7 @@ message(STATUS "CXX_FLAGS_RELEASE are ${CMAKE_CXX_FLAGS_RELEASE}")
 include_directories(include)
 
 add_subdirectory(sample)
+
 add_subdirectory(tools)
 
 enable_testing()

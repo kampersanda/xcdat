@@ -16,13 +16,12 @@ int predictive_search(const cmd_line_parser::parser& p) {
     const auto input_idx = p.get<std::string>("input_idx");
     const auto max_num_results = p.get<std::uint64_t>("max_num_results", 10);
 
-    const auto trie = Trie::load(input_idx);
+    const auto trie = xcdat::load<Trie>(input_idx);
 
     struct result_type {
         std::uint64_t id;
         std::string str;
     };
-
     std::vector<result_type> results;
     results.reserve(1ULL << 10);
 
