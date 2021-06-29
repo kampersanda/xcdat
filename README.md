@@ -10,6 +10,14 @@ The double array is known as the fastest trie representation and has been used i
 
 Xcdat can implement trie dictionaries in smaller space compared to the other double-array libraries. In addition, the lookup speed is relatively fast in compressed data structures from the double-array advantage.
 
+### Table of contents
+
+- [Features](#features)
+- [Build instructions](#build-instructions)
+- [Command line tools](#command-line-tools)
+- [Sample usage](#sample-usage)
+- [Interface](#interface)
+
 ## Features
 
 - **Fast and memory-efficient:** Xcdat employs the double-array structure, known as the fastest trie data structure, and.
@@ -21,7 +29,7 @@ Xcdat can implement trie dictionaries in smaller space compared to the other dou
 - **Fast search**: Xcdat can provide lookup operations faster than other compressed trie libraries because it is based on the double-array trie. On the other hand, compared to the existing double-array libraries, the speed will be slower due to the compression.
 - **Prefix-based Lookup Operations**: As with other trie libraries, Xcdat also provides prefix-based lookup operations required for natural language processing and so on.
 
-## Build Instructions
+## Build instructions
 
 You can download and compile Xcdat as the following commands.
 
@@ -37,9 +45,69 @@ $ make install
 
 ## Command line tools
 
+### Build
 
+```sh
+$ xcdat_build enwiki-latest-all-titles-in-ns0 idx.bin -u 1
+time_in_sec: 13.449
+memory_in_bytes: 1.70618e+08
+memory_in_MiB: 162.714
+number_of_keys: 15955763
+alphabet_size: 198
+max_length: 253
+```
 
-## Sample
+### Lookup
+
+```sh
+$ xcdat_lookup idx.bin
+Algorithm
+1255938	Algorithm
+```
+
+### Decode
+
+```sh
+$ xcdat_decode idx.bin
+1255938
+1255938	Algorithm
+```
+
+### Common prefix search
+
+```sh
+$ xcdat_prefix_search idx.bin
+Algorithmic
+6 found
+57	A
+798460	Al
+1138004	Alg
+1253024	Algo
+1255938	Algorithm
+1255931	Algorithmic
+```
+
+### Predictive search
+
+```sh
+$ xcdat_predictive_search idx.bin -n 3
+Algorithm
+263 found
+1255938	Algorithm
+1255944	Algorithm's_optimality
+1255972	Algorithm_(C++)
+```
+
+### Enumerate
+
+```sh
+$ xcdat_enumerate idx.bin | head -3
+0	!
+107	!!
+138	!!!
+```
+
+## Sample usage
 
 ```c++
 #include <iostream>
@@ -168,7 +236,111 @@ Enumerate() = {
 }
 ```
 
+## Interface
 
+### Dictionary class
+
+```c++
+temp late <class BcVector>
+class trie {
+  public:
+    using trie_type = trie<BcVector>;
+    using bc_vector_type = BcVector;
+
+    static constexpr auto l1_bits = bc_vector_type::l1_bits;
+
+  public:
+    trie() = default;
+    virtual ~trie() = default;
+    trie(const trie&) = delete;
+    trie& operator=(const trie&) = delete;
+    trie(trie&&) noexcept = default;
+    trie& operator=(trie&&) noexcept = default;
+
+    template <class Strings>
+    explicit trie(const Strings& keys, bool bin_mode = false);
+
+    inline bool bin_mode() const;
+
+    //! Get the number of stored keywords.
+    inline std::uint64_t num_keys() const;
+
+    //! Get the alphabet size.
+    inline std::uint64_t alphabet_size() const;
+
+    //! Get the maximum length of keywords.
+    inline std::uint64_t max_length() const;
+
+    /**
+     * Search the given keyword in the trie.
+     * @param[in] key The query keyword.
+     * @return The associated ID if found.
+     */
+    inline std::optional<std::uint64_t> lookup(std::string_view key) const;
+
+    /**
+     * Decode the keyword associated with the given ID.
+     * @param[in] id The keyword ID.
+     * @return The keyword associated with the ID.
+     */
+    inline std::string decode(std::uint64_t id) const;
+
+    /**
+     * An iterator class for common prefix search.
+     */
+    class prefix_iterator {
+      public:
+        prefix_iterator() = default;
+
+        inline bool next();
+        inline std::uint64_t id() const;
+        inline std::string decoded() const;
+        inline std::string_view decoded_view() const;
+    };
+
+    //! Make the iterator for the prefix search
+    inline prefix_iterator make_prefix_iterator(std::string_view key) const;
+
+    inline void prefix_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
+
+    /**
+     * An iterator class for predictive search.
+     */
+    class predictive_iterator {
+      public:
+        predictive_iterator() = default;
+
+        inline bool next();
+        inline std::uint64_t id() const;
+        inline std::string decoded() const;
+        inline std::string_view decoded_view() const;
+    };
+
+    inline predictive_iterator make_predictive_iterator(std::string_view key) const {
+        return predictive_iterator(this, key);
+    }
+
+    inline void predictive_search(std::string_view key,
+                                  const std::function<void(std::uint64_t, std::string_view)>& fn) const {
+        auto itr = make_predictive_iterator(key);
+        while (itr.next()) {
+            fn(itr.id(), itr.decoded_view());
+        }
+    }
+
+    using enumerative_iterator = predictive_iterator;
+
+    inline enumerative_iterator make_enumerative_iterator() const;
+    inline void enumerate(const std::function<void(std::uint64_t, std::string_view)>& fn) const;
+
+    template <class Visitor>
+    void visit(Visitor& visitor);
+};
+```
+
+### I/O handlers
+
+## Benchmark
 
 ## Licensing
 

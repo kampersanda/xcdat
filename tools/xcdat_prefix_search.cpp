@@ -25,13 +25,9 @@ int prefix_search(const cmd_line_parser::parser& p) {
     std::vector<result_type> results;
     results.reserve(trie.max_length());
 
-    for (std::string str; std::getline(std::cin, str);) {
+    for (std::string key; std::getline(std::cin, key);) {
         results.clear();
-
-        auto itr = trie.make_prefix_iterator(str);
-        while (itr.next()) {
-            results.push_back({itr.id(), itr.decoded_view()});
-        }
+        trie.prefix_search(key, [&](std::uint64_t id, std::string_view str) { results.push_back({id, str}); });
 
         tfm::printfln("%d found", results.size());
         for (const auto& r : results) {

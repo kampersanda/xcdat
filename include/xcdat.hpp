@@ -13,6 +13,7 @@ namespace xcdat {
 using trie_7_type = trie<bc_vector_7>;
 using trie_8_type = trie<bc_vector_8>;
 
+//! Map the memory to the trie index.
 template <class Trie>
 [[maybe_unused]] Trie mmap(const char* address) {
     mmap_visitor visitor(address);
@@ -26,6 +27,7 @@ template <class Trie>
     return idx;
 }
 
+//! Load the trie index from the file.
 template <class Trie>
 [[maybe_unused]] Trie load(std::string_view filepath) {
     load_visitor visitor(filepath);
@@ -39,6 +41,7 @@ template <class Trie>
     return idx;
 }
 
+//! Save the trie index into the file, and returns the file size in bytes.
 template <class Trie>
 [[maybe_unused]] std::uint64_t save(const Trie& idx, std::string_view filepath) {
     save_visitor visitor(filepath);
@@ -47,6 +50,7 @@ template <class Trie>
     return visitor.bytes();
 }
 
+//! Get the index size in bytes.
 template <class Trie>
 [[maybe_unused]] std::uint64_t memory_in_bytes(const Trie& idx) {
     size_visitor visitor;

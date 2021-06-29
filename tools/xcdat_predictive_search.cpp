@@ -26,13 +26,11 @@ int predictive_search(const cmd_line_parser::parser& p) {
     std::vector<result_type> results;
     results.reserve(1ULL << 10);
 
-    for (std::string str; std::getline(std::cin, str);) {
+    for (std::string key; std::getline(std::cin, key);) {
         results.clear();
-
-        auto itr = trie.make_predictive_iterator(str);
-        while (itr.next()) {
-            results.push_back({itr.id(), itr.decoded()});
-        }
+        trie.predictive_search(key, [&](std::uint64_t id, std::string_view str) {
+            results.push_back({id, std::string(str)});
+        });
 
         tfm::printfln("%d found", results.size());
         for (std::uint64_t i = 0; i < std::min<std::uint64_t>(results.size(), max_num_results); i++) {
