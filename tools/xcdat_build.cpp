@@ -10,7 +10,7 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     p.add("input_keys", "Input filepath of data keys");
     p.add("output_idx", "Output filepath of trie index");
     p.add("trie_type", "Trie type: [7|8] (default=7)", "-t", false);
-    p.add("to_unique", "Make unique the input keys? (default=0)", "-u", false);
+    p.add("to_unique", "Make unique the input keys? (default=1)", "-u", false);
     return p;
 }
 
@@ -18,7 +18,7 @@ template <class Trie>
 int build(const cmd_line_parser::parser& p) {
     const auto input_keys = p.get<std::string>("input_keys");
     const auto output_idx = p.get<std::string>("output_idx");
-    const auto to_unique = p.get<bool>("to_unique", false);
+    const auto to_unique = p.get<bool>("to_unique", true);
 
     auto keys = xcdat::load_strings(input_keys);
     if (keys.empty()) {

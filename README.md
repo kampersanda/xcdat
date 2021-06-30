@@ -54,12 +54,10 @@ The library considers a 64-bit operating system. The code has been tested only o
 
 ### `xcdat_build`
 
-It builds the trie index from a given dataset consisting of keywords separated by newlines. The keywords have to be sorted (in ascii order) and unique.
-
-The following command builds the trie index from dataset `enwiki-latest-all-titles-in-ns0` and writes the index into file `idx.bin`.
+It builds the trie index from a given dataset consisting of keywords separated by newlines. The following command builds the trie index from dataset `enwiki-titles.txt` and writes the index into file `idx.bin`.
 
 ```
-$ xcdat_build enwiki-latest-all-titles-in-ns0 idx.bin -u 1
+$ xcdat_build enwiki-titles.txt idx.bin
 time_in_sec: 13.449
 memory_in_bytes: 1.70618e+08
 memory_in_MiB: 162.714
