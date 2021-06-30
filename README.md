@@ -20,15 +20,15 @@
 - **Fast and compact data structure.** Xcdat employs the *double-array trie* [3] known as the fastest data structure for trie implementation. However, the double-array trie resorts to many pointers and consumes a large amount of memory. To address this, Xcdat applies the *XCDA* method [2] that represents the double-array trie in a compressed format while maintaining the fast searches.
 - **Cache efficiency.** Xcdat employs a *minimal-prefix trie* [4] that replaces redundant trie nodes into strings, resulting in reducing random access and improving locality of references.
 - **Dictionary encoding.** Xcdat maps `N` distinct keywords into unique IDs from `[0,N-1]`, and supports the two symmetric operations: `lookup` returns the ID corresponding to a given keyword; `decode` returns the keyword associated with a given ID. The mapping is so-called *dictionary encoding* (or *domain encoding*) and is fundamental in many DB applications as described by Martínez-Prieto et al [1] or Müller et al. [5].
-- **Prefix search operations.** Xcdat supports prefix search operations realized by the trie search algorithm. Thus, it will be useful in many NLP applications such as auto completions [6], stemmed searches [7], or morphological analysis [8].
+- **Prefix search operations.** Xcdat supports prefix search operations realized by trie search algorithms: common prefix and predictive searches. These will be useful in many NLP applications such as auto completions [6], stemmed searches [7], or morphological analysis [8].
 - **64-bit support.** As mentioned before, since the double array is a pointer-based data structure, most double-array libraries use 32-bit pointers to reduce memory consumption, resulting in limiting the scale of the input dataset. On the other hand, the XCDA method allows Xcdat to represent 64-bit pointers without sacrificing memory efficiency.
 - **Binary key support.** In normal mode, Xcdat will use the `\0` character as an end marker for each keyword. However, if the dataset include `\0` characters, it will use bit flags instead of end markers, allowing the dataset to consist of binary keywords.
 - **Memory mapping.** Xcdat supports *memory mapping*, allowing data to be deserialized quickly without loading it into memory. Of course, deserialization by the loading is also supported.
-- **Header only.** Since the library consists of only header files, it can be easily installed in your project.
+- **Header only.** The library consists only of header files, and you can easily install it.
 
 ## Build instructions
 
-You can download and compile Xcdat as the following commands.
+You can download, compile, and install Xcdat with the following commands.
 
 ```
 $ git clone https://github.com/kampersanda/xcdat.git
@@ -36,17 +36,25 @@ $ cd xcdat
 $ mkdir build
 $ cd build
 $ cmake ..
-$ make
+$ make -j
 $ make install
 ```
 
+Or, since this library consists only of header files, you can easily install it by passing through the path to the directory `include`.
+
+### Requirements
+
+You need to install a modern C++17 ready compiler such as `g++ >= 7.0` or `clang >= 4.0`. For the build system, you need to install `CMake >= 3.0` to compile the library.
+
+The library considers a 64-bit operating system. The code has been tested only on Mac OS X and Linux. That is, this library considers only UNIX-compatible OS.
+
 ## Command line tools
 
-Xcdat provides some command line tools, installed via `make install`.
+Xcdat provides command line tools to build the index and perform searches, which are inspired by [marisa-trie](https://github.com/s-yata/marisa-trie).
 
 ### `xcdat_build`
 
-It builds and saves the trie index.
+It builds the trie index from data set.
 
 ```
 $ xcdat_build enwiki-latest-all-titles-in-ns0 idx.bin -u 1
@@ -60,10 +68,14 @@ max_length: 253
 
 ### `xcdat_lookup`
 
+It
+
 ```
 $ xcdat_lookup idx.bin
 Algorithm
 1255938	Algorithm
+Double_Array
+-1	Double_Array
 ```
 
 ### `xcdat_decode`
@@ -109,6 +121,8 @@ $ xcdat_enumerate idx.bin | head -3
 ```
 
 ## Sample usage
+
+`sample/sample.cpp` provides a sample usage.
 
 ```c++
 #include <iostream>
@@ -198,7 +212,7 @@ int main() {
 }
 ```
 
-
+The output will be
 
 ```
 NumberKeys: 12
@@ -238,6 +252,11 @@ Enumerate() = {
 ```
 
 ## API
+
+`xcdat.hpp` provides
+
+- `xcdat::trie_7_type`: 
+- `xcdat::trie_8_type`:
 
 ### Dictionary class
 
