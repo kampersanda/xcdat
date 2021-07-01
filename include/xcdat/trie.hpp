@@ -48,7 +48,7 @@ class trie {
     //! If bin_mode = true, bit flags are used istead, and the keywords can contain NULL characters.
     //! If the input keywords contain NULL characters, bin_mode will be forced to be set to true.
     template <class Strings>
-    explicit trie(const Strings& keys, bool bin_mode = false) : trie(trie_builder(keys, l1_bits, bin_mode)) {
+    trie(const Strings& keys, bool bin_mode = false) : trie(trie_builder(keys, l1_bits, bin_mode)) {
         static_assert(sizeof(char) == sizeof(typename Strings::value_type::value_type));
     }
 
@@ -85,6 +85,11 @@ class trie {
     //! Get the number of unused DA units.
     inline std::uint64_t num_free_units() const {
         return m_bcvec.num_free_units();
+    }
+
+    //! Get the number of unused DA units.
+    inline std::uint64_t tail_length() const {
+        return m_tvec.size();
     }
 
     //! Lookup the ID of the keyword.

@@ -58,12 +58,10 @@ It builds the trie index from a given dataset consisting of keywords separated b
 
 ```
 $ xcdat_build enwiki-titles.txt idx.bin
-time_in_sec: 13.449
-memory_in_bytes: 1.70618e+08
-memory_in_MiB: 162.714
-number_of_keys: 15955763
-alphabet_size: 198
-max_length: 253
+Number of keys: 15955763
+Number of trie nodes: 36441058
+Memory usage in bytes: 1.70618e+08
+Memory usage in MiB: 162.714
 ```
 
 ### `xcdat_lookup`
@@ -126,6 +124,42 @@ $ xcdat_enumerate idx.bin | head -3
 0	!
 107	!!
 138	!!!
+```
+
+### `xcdat_benchmark`
+
+It measures the performance of Xcdat for a given dataset.
+
+```
+$ xcdat_benchmark enwiki-titles.txt
+** xcdat::trie_7_type **
+Binary mode: 0
+Alphabet size: 198
+Max key length: 253
+Number of keys: 15955763
+Number of trie nodes: 36441058
+Number of DA units: 36520704
+Number of free DA units: 79646
+TAIL length: 30776290
+Memory usage in bytes: 1.70618e+08
+Memory usage in MiB: 162.714
+Construction time in seconds: 11.828
+Lookup time in microsec/query: 0.8259
+Decode time in microsec/query: 1.4545
+** xcdat::trie_8_type **
+Binary mode: 0
+Alphabet size: 198
+Max key length: 253
+Number of keys: 15955763
+Number of trie nodes: 36441035
+Number of DA units: 36515840
+Number of free DA units: 74805
+TAIL length: 30776290
+Memory usage in bytes: 1.64104e+08
+Memory usage in MiB: 156.502
+Construction time in seconds: 11.966
+Lookup time in microsec/query: 0.844
+Decode time in microsec/query: 1.0029
 ```
 
 ## Sample usage
@@ -301,25 +335,40 @@ class trie {
     //! If bin_mode = true, bit flags are used istead, and the keywords can contain NULL characters.
     //! If the input keywords contain NULL characters, bin_mode will be forced to be set to true.
     template <class Strings>
-    explicit trie(const Strings& keys, bool bin_mode = false);
+    trie(const Strings& keys, bool bin_mode = false);
 
     //! Check if the binary mode.
-    inline bool bin_mode() const;
+    bool bin_mode() const;
 
     //! Get the number of stored keywords.
-    inline std::uint64_t num_keys() const;
+    std::uint64_t num_keys() const;
 
     //! Get the alphabet size.
-    inline std::uint64_t alphabet_size() const;
+    std::uint64_t alphabet_size() const;
 
     //! Get the maximum length of keywords.
-    inline std::uint64_t max_length() const;
+    std::uint64_t max_length() const;
+
+    //! Get the number of trie nodes.
+    std::uint64_t num_nodes() const;
+
+    //! Get the number of DA units.
+    std::uint64_t num_units() const;
+
+    //! Get the number of unused DA units.
+    std::uint64_t num_free_units() const;
+
+    //! Get the number of unused DA units.
+    std::uint64_t tail_length() const;
 
     //! Lookup the ID of the keyword.
-    inline std::optional<std::uint64_t> lookup(std::string_view key) const;
+    std::optional<std::uint64_t> lookup(std::string_view key) const;
 
     //! Decode the keyword associated with the ID.
-    inline std::string decode(std::uint64_t id) const;
+    std::string decode(std::uint64_t id) const;
+
+    //! Decode the keyword associated with the ID.
+    void decode(std::uint64_t id, std::string& decoded) const;
 
     //! An iterator class for common prefix search.
     class prefix_iterator {
@@ -328,24 +377,24 @@ class trie {
 
         //! Increment the iterator.
         //! Return false if the iteration is terminated.
-        inline bool next();
+        bool next();
 
         //! Get the result ID.
-        inline std::uint64_t id() const;
+        std::uint64_t id() const;
 
         //! Get the result keyword.
-        inline std::string decoded() const;
+        std::string decoded() const;
 
         //! Get the reference to the result keyword.
         //! Note that the referenced data will be changed in the next iteration.
-        inline std::string_view decoded_view() const;
+        std::string_view decoded_view() const;
     };
 
     //! Make the common prefix searcher for the given keyword.
-    inline prefix_iterator make_prefix_iterator(std::string_view key) const;
+    prefix_iterator make_prefix_iterator(std::string_view key) const;
 
     //! Preform common prefix search for the keyword.
-    inline void prefix_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
+    void prefix_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
     //! An iterator class for predictive search.
     class predictive_iterator {
@@ -354,41 +403,33 @@ class trie {
 
         //! Increment the iterator.
         //! Return false if the iteration is terminated.
-        inline bool next();
+        bool next();
 
         //! Get the result ID.
-        inline std::uint64_t id() const;
+        std::uint64_t id() const;
 
         //! Get the result keyword.
-        inline std::string decoded() const;
+        std::string decoded() const;
 
         //! Get the reference to the result keyword.
         //! Note that the referenced data will be changed in the next iteration.
-        inline std::string_view decoded_view() const;
+        std::string_view decoded_view() const;
     };
 
     //! Make the predictive searcher for the keyword.
-    inline predictive_iterator make_predictive_iterator(std::string_view key) const {
-        return predictive_iterator(this, key);
-    }
+    predictive_iterator make_predictive_iterator(std::string_view key) const;
 
     //! Preform predictive search for the keyword.
-    inline void predictive_search(std::string_view key,
-                                  const std::function<void(std::uint64_t, std::string_view)>& fn) const {
-        auto itr = make_predictive_iterator(key);
-        while (itr.next()) {
-            fn(itr.id(), itr.decoded_view());
-        }
-    }
+    void predictive_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
     //! An iterator class for enumeration.
     using enumerative_iterator = predictive_iterator;
 
     //! An iterator class for enumeration.
-    inline enumerative_iterator make_enumerative_iterator() const;
+    enumerative_iterator make_enumerative_iterator() const;
 
     //! Enumerate all the keywords and their IDs stored in the trie.
-    inline void enumerate(const std::function<void(std::uint64_t, std::string_view)>& fn) const;
+    void enumerate(const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
     //! Visit the members.
     template <class Visitor>
