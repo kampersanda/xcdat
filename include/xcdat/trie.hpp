@@ -72,6 +72,21 @@ class trie {
         return m_table.max_length();
     }
 
+    //! Get the number of trie nodes.
+    inline std::uint64_t num_nodes() const {
+        return m_bcvec.num_nodes();
+    }
+
+    //! Get the number of DA units.
+    inline std::uint64_t num_units() const {
+        return m_bcvec.num_units();
+    }
+
+    //! Get the number of unused DA units.
+    inline std::uint64_t num_free_units() const {
+        return m_bcvec.num_free_units();
+    }
+
     //! Lookup the ID of the keyword.
     inline std::optional<std::uint64_t> lookup(std::string_view key) const {
         std::uint64_t kpos = 0, npos = 0;
@@ -98,12 +113,18 @@ class trie {
 
     //! Decode the keyword associated with the ID.
     inline std::string decode(std::uint64_t id) const {
-        if (num_keys() <= id) {
-            return {};
-        }
-
         std::string decoded;
         decoded.reserve(max_length());
+        decode(id, decoded);
+        return decoded;
+    }
+
+    //! Decode the keyword associated with the ID.
+    inline void decode(std::uint64_t id, std::string& decoded) const {
+        decoded.clear();
+        if (num_keys() <= id) {
+            return;
+        }
 
         std::uint64_t npos = id_to_npos(id);
         std::uint64_t tpos = m_bcvec.is_leaf(npos) ? m_bcvec.link(npos) : UINT64_MAX;
@@ -118,7 +139,6 @@ class trie {
         if (tpos != 0 && tpos != UINT64_MAX) {
             m_tvec.decode(tpos, [&](char c) { decoded.push_back(c); });
         }
-        return decoded;
     }
 
     //! An iterator class for common prefix search.

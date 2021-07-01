@@ -141,6 +141,14 @@ class bc_vector_7 {
         return m_ints_l1.size() / 2;
     }
 
+    inline std::uint64_t num_free_units() const {
+        return m_num_frees;
+    }
+
+    inline std::uint64_t num_nodes() const {
+        return num_units() - num_free_units();
+    }
+
     inline std::uint64_t num_leaves() const {
         return m_leaves.num_ones();
     }

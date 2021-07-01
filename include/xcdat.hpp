@@ -70,9 +70,8 @@ template <class Trie>
 
 [[maybe_unused]] std::vector<std::string> load_strings(std::string_view filepath) {
     std::ifstream ifs(filepath);
-    if (!ifs) {
-        return {};
-    }
+    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
+
     std::vector<std::string> strs;
     for (std::string str; std::getline(ifs, str);) {
         strs.push_back(str);

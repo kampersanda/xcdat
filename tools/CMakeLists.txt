@@ -5,6 +5,7 @@ set(XCDAT_FILES
     "xcdat_prefix_search"
     "xcdat_predictive_search"
     "xcdat_enumerate"
+    "xcdat_benchmark"
 )
 
 foreach(XCDAT_FILE ${XCDAT_FILES})
