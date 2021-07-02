@@ -20,7 +20,7 @@
 - **Fast and compact data structure.** Xcdat employs the *double-array trie* [3] known as the fastest data structure for trie implementation. However, the double-array trie resorts to many pointers and consumes a large amount of memory. To address this, Xcdat applies the *XCDA* method [2] that represents the double-array trie in a compressed format while maintaining the fast searches.
 - **Cache efficiency.** Xcdat employs a *minimal-prefix trie* [4] that replaces redundant trie nodes into strings, resulting in reducing random access and improving locality of references.
 - **Dictionary encoding.** Xcdat maps `N` distinct keywords into unique IDs from `[0,N-1]`, and supports the two symmetric operations: `lookup` returns the ID corresponding to a given keyword; `decode` returns the keyword associated with a given ID. The mapping is so-called *dictionary encoding* (or *domain encoding*) and is fundamental in many DB applications as described by Martínez-Prieto et al [1] or Müller et al. [5].
-- **Prefix search operations.** Xcdat supports prefix search operations realized by trie search algorithms: `prefix_search` returns all the keywords contained as prefixes of a given string; `predictive search` returns all the keywords starting with a given string. These will be useful in many NLP applications such as auto completions [6], stemmed searches [7], or morphological analysis [8].
+- **Prefix search operations.** Xcdat supports prefix search operations realized by trie search algorithms: `prefix_search` returns all the keywords contained as prefixes of a given string; `predictive search` returns all the keywords starting with a given string. These will be useful in many NLP applications such as auto completions [6], stemmed searches [7], or input method editors [8].
 - **64-bit support.** As mentioned before, since the double array is a pointer-based data structure, most double-array libraries use 32-bit pointers to reduce memory consumption, resulting in limiting the scale of the input dataset. On the other hand, the XCDA method allows Xcdat to represent 64-bit pointers without sacrificing memory efficiency.
 - **Binary key support.** In normal mode, Xcdat will use the `\0` character as an end marker for each keyword. However, if the dataset include `\0` characters, it will use bit flags instead of end markers, allowing the dataset to consist of binary keywords.
 - **Memory mapping.** Xcdat supports *memory mapping*, allowing data to be deserialized quickly without loading it into memory. Of course, deserialization by the loading is also supported.
@@ -288,8 +288,8 @@ Xcdat can be used by including `xcdat.hpp`.
 
 The two dictionary types are difined.
 
-- `xcdat::trie_8_type` is the trie dictionary using standard DACs using 8-bit integers for elements.
-- `xcdat::trie_7_type` is the trie dictionary using pointer-based DACs using 7-bit integers for elements.
+- `xcdat::trie_8_type` is the trie dictionary using standard DACs [9] using 8-bit integers for elements.
+- `xcdat::trie_7_type` is the trie dictionary using pointer-based DACs [2] using 7-bit integers for elements.
 
 ### Trie dictionary class
 
@@ -501,9 +501,13 @@ If you use the library in academic settings, please cite the following paper.
 
 ## References
 
-1. J. Aoe. An efficient digital search algorithm by using a double-array structure. IEEE Transactions on Software Engineering, 15(9):1066–1077, 1989.
-2. N. R. Brisaboa, S. Ladra, and G. Navarro. DACs: Bringing direct access to variable-length codes. Information Processing & Management, 49(1):392–404, 2013.
-3. S. Kanda, K. Morita, and M. Fuketa. Compressed double-array tries for string dictionaries supporting fast lookup. Knowledge and Information Systems, 51(3): 1023–1042, 2017.
-4. M. A. Martínez-Prieto, N. Brisaboa, R. Cánovas, F. Claude, and G. Navarro. Practical compressed string dictionaries. Information Systems, 56:73–108, 2016
-5. S. Yata, M. Oono, K. Morita, M. Fuketa, T. Sumitomo, and J. Aoe. A compact static double-array keeping character codes. Information Processing & Management, 43(1):237–247, 2007.
+1. M. A. Martínez-Prieto, N. Brisaboa, R. Cánovas, F. Claude, and G. Navarro. Practical compressed string dictionaries. Information Systems, 56:73–108, 2016
+2. S. Kanda, K. Morita, and M. Fuketa. Compressed double-array tries for string dictionaries supporting fast lookup. Knowledge and Information Systems, 51(3): 1023–1042, 2017.
+3. J. Aoe. An efficient digital search algorithm by using a double-array structure. IEEE Transactions on Software Engineering, 15(9):1066–1077, 1989.
+4. S. Yata, M. Oono, K. Morita, M. Fuketa, T. Sumitomo, and J. Aoe. A compact static double-array keeping character codes. Information Processing & Management, 43(1):237–247, 2007.
+5. Müller, Ingo, Cornelius Ratsch, and Franz Faerber. Adaptive string dictionary compression in in-memory column-store database systems. In EDBT, pp. 283–294, 2014.
+6. Gog, Simon, Giulio Ermanno Pibiri, and Rossano Venturini. Efficient and effective query auto-completion. In SIGIR, pp. 2271–2280, 2020.
+7. Ricardo Baeza-Yates, and Berthier Ribeiro-Neto. Modern Information Retrieval. 2nd ed. Addison Wesley, Boston, MA, USA, 2011.
+8. Kudo, Taku, et al. Efficient dictionary and language model compression for input method editors. In WTIM, pp. 19–25, 2011.
+9. N. R. Brisaboa, S. Ladra, and G. Navarro. DACs: Bringing direct access to variable-length codes. Information Processing & Management, 49(1):392–404, 2013.
 
