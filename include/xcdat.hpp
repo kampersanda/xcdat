@@ -13,7 +13,7 @@ namespace xcdat {
 using trie_7_type = trie<bc_vector_7>;
 using trie_8_type = trie<bc_vector_8>;
 
-//! Map the memory to the trie index.
+//! Set the continuous memory block to a new trie instance.
 template <class Trie>
 [[maybe_unused]] Trie mmap(const char* address) {
     mmap_visitor visitor(address);
@@ -41,7 +41,7 @@ template <class Trie>
     return idx;
 }
 
-//! Save the trie index into the file, and returns the file size in bytes.
+//! Save the trie index to the file and returns the file size in bytes.
 template <class Trie>
 [[maybe_unused]] std::uint64_t save(const Trie& idx, std::string_view filepath) {
     save_visitor visitor(filepath);
@@ -59,6 +59,8 @@ template <class Trie>
     return visitor.bytes();
 }
 
+//! Get the flag indicating the trie type, embedded by the function 'save'.
+//! The flag corresponds to trie::l1_bits and will be used to detect the trie type from the file.
 [[maybe_unused]] std::uint32_t get_flag(std::string_view filepath) {
     std::ifstream ifs(filepath);
     XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
@@ -68,12 +70,13 @@ template <class Trie>
     return flag;
 }
 
-[[maybe_unused]] std::vector<std::string> load_strings(std::string_view filepath) {
+//! Load the keywords from the file.
+[[maybe_unused]] std::vector<std::string> load_strings(std::string_view filepath, char delim = '\n') {
     std::ifstream ifs(filepath);
     XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
 
     std::vector<std::string> strs;
-    for (std::string str; std::getline(ifs, str);) {
+    for (std::string str; std::getline(ifs, str, delim);) {
         strs.push_back(str);
     }
     return strs;

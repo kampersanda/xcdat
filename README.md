@@ -290,14 +290,10 @@ Enumerate() = {
 ### Dictionary class
 
 ```c++
+//! A compressed string dictionary based on an improved double-array trie.
+//! 'BcVector' is the data type of Base and Check vectors.
 template <class BcVector>
 class trie {
-  public:
-    using trie_type = trie<BcVector>;
-    using bc_vector_type = BcVector;
-
-    static constexpr auto l1_bits = bc_vector_type::l1_bits;
-
   public:
     //! Default constructor
     trie() = default;
@@ -318,9 +314,18 @@ class trie {
     trie& operator=(trie&&) noexcept = default;
 
     //! Build the trie from the input keywords, which are lexicographically sorted and unique.
+    //!
     //! If bin_mode = false, the NULL character is used for the termination of a keyword.
     //! If bin_mode = true, bit flags are used istead, and the keywords can contain NULL characters.
     //! If the input keywords contain NULL characters, bin_mode will be forced to be set to true.
+    //!
+    //! The type 'Strings' and 'Strings::value_type' should be a random iterable container such as std::vector.
+    //! Precisely, they should support the following operations:
+    //!  - size() returns the container size.
+    //!  - operator[](i) accesses the i-th element.
+    //!  - begin() returns the iterator to the beginning.
+    //!  - end() returns the iterator to the end.
+    //! The type 'Strings::value_type::value_type' should be one-byte integer type such as 'char'.
     template <class Strings>
     trie(const Strings& keys, bool bin_mode = false);
 
@@ -354,10 +359,13 @@ class trie {
     //! Decode the keyword associated with the ID.
     std::string decode(std::uint64_t id) const;
 
-    //! Decode the keyword associated with the ID.
+    //! Decode the keyword associated with the ID and store it in 'decoded'.
+    //! It can avoid reallocation of memory to store the result.
     void decode(std::uint64_t id, std::string& decoded) const;
 
     //! An iterator class for common prefix search.
+    //! It enumerates all the keywords contained as prefixes of a given string.
+    //! It should be instantiated via the function 'make_prefix_iterator'.
     class prefix_iterator {
       public:
         prefix_iterator() = default;
@@ -384,6 +392,8 @@ class trie {
     void prefix_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
     //! An iterator class for predictive search.
+    //! It enumerates all the keywords starting with a given string.
+    //! It should be instantiated via the function 'make_predictive_iterator'.
     class predictive_iterator {
       public:
         predictive_iterator() = default;
@@ -410,6 +420,8 @@ class trie {
     void predictive_search(std::string_view key, const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
     //! An iterator class for enumeration.
+    //! It enumerates all the keywords stored in the trie.
+    //! It should be instantiated via the function 'make_enumerative_iterator'.
     using enumerative_iterator = predictive_iterator;
 
     //! An iterator class for enumeration.
@@ -418,7 +430,7 @@ class trie {
     //! Enumerate all the keywords and their IDs stored in the trie.
     void enumerate(const std::function<void(std::uint64_t, std::string_view)>& fn) const;
 
-    //! Visit the members.
+    //! Visit the members (commonly used for I/O).
     template <class Visitor>
     void visit(Visitor& visitor);
 };
@@ -429,8 +441,28 @@ class trie {
 `xcdat.hpp` provides some functions for handling I/O operations.
 
 ```c++
+//! Set the continuous memory block to a new trie instance.
 template <class Trie>
 Trie mmap(const char* address);
+
+//! Load the trie index from the file.
+template <class Trie>
+Trie load(std::string_view filepath);
+
+//! Save the trie index to the file and returns the file size in bytes.
+template <class Trie>
+std::uint64_t save(const Trie& idx, std::string_view filepath);
+
+//! Get the index size in bytes.
+template <class Trie>
+std::uint64_t memory_in_bytes(const Trie& idx);
+
+//! Get the flag indicating the trie type, embedded by the function 'save'.
+//! The flag corresponds to trie::l1_bits and will be used to detect the trie type from the file.
+std::uint32_t get_flag(std::string_view filepath);
+
+//! Load the keywords from the file.
+std::vector<std::string> load_strings(std::string_view filepath, char delim = '\n');
 ```
 
 ## Performance

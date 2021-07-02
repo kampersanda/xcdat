@@ -8,7 +8,8 @@
 
 namespace xcdat {
 
-//! A compressed string dictionary based on the XOR-compressed double-array trie.
+//! A compressed string dictionary based on an improved double-array trie.
+//! 'BcVector' is the data type of Base and Check vectors.
 template <class BcVector>
 class trie {
   public:
@@ -44,9 +45,18 @@ class trie {
     trie& operator=(trie&&) noexcept = default;
 
     //! Build the trie from the input keywords, which are lexicographically sorted and unique.
+    //!
     //! If bin_mode = false, the NULL character is used for the termination of a keyword.
     //! If bin_mode = true, bit flags are used istead, and the keywords can contain NULL characters.
     //! If the input keywords contain NULL characters, bin_mode will be forced to be set to true.
+    //!
+    //! The type 'Strings' and 'Strings::value_type' should be a random iterable container such as std::vector.
+    //! Precisely, they should support the following operations:
+    //!  - size() returns the container size.
+    //!  - operator[](i) accesses the i-th element.
+    //!  - begin() returns the iterator to the beginning.
+    //!  - end() returns the iterator to the end.
+    //! The type 'Strings::value_type::value_type' should be one-byte integer type such as 'char'.
     template <class Strings>
     trie(const Strings& keys, bool bin_mode = false) : trie(trie_builder(keys, l1_bits, bin_mode)) {
         static_assert(sizeof(char) == sizeof(typename Strings::value_type::value_type));
@@ -124,9 +134,11 @@ class trie {
         return decoded;
     }
 
-    //! Decode the keyword associated with the ID.
+    //! Decode the keyword associated with the ID and store it in 'decoded'.
+    //! It can avoid reallocation of memory to store the result.
     inline void decode(std::uint64_t id, std::string& decoded) const {
         decoded.clear();
+
         if (num_keys() <= id) {
             return;
         }
@@ -147,6 +159,8 @@ class trie {
     }
 
     //! An iterator class for common prefix search.
+    //! It enumerates all the keywords contained as prefixes of a given string.
+    //! It should be instantiated via the function 'make_prefix_iterator'.
     class prefix_iterator {
       private:
         const trie_type* m_obj = nullptr;
@@ -203,6 +217,8 @@ class trie {
     }
 
     //! An iterator class for predictive search.
+    //! It enumerates all the keywords starting with a given string.
+    //! It should be instantiated via the function 'make_predictive_iterator'.
     class predictive_iterator {
       public:
         struct cursor_type {
@@ -266,6 +282,8 @@ class trie {
     }
 
     //! An iterator class for enumeration.
+    //! It enumerates all the keywords stored in the trie.
+    //! It should be instantiated via the function 'make_enumerative_iterator'.
     using enumerative_iterator = predictive_iterator;
 
     //! Make the enumerator.
@@ -281,7 +299,7 @@ class trie {
         }
     }
 
-    //! Visit the members.
+    //! Visit the members (commonly used for I/O).
     template <class Visitor>
     void visit(Visitor& visitor) {
         visitor.visit(m_num_keys);
