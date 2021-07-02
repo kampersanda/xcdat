@@ -97,7 +97,7 @@ class trie {
         return m_bcvec.num_free_units();
     }
 
-    //! Get the number of unused DA units.
+    //! Get the length of TAIL vector.
     inline std::uint64_t tail_length() const {
         return m_tvec.size();
     }

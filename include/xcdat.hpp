@@ -10,8 +10,8 @@
 
 namespace xcdat {
 
-using trie_7_type = trie<bc_vector_7>;
 using trie_8_type = trie<bc_vector_8>;
+using trie_7_type = trie<bc_vector_7>;
 
 //! Set the continuous memory block to a new trie instance.
 template <class Trie>

@@ -282,12 +282,18 @@ Enumerate() = {
 
 ## API
 
-`xcdat.hpp` provides
+Xcdat can be used by including `xcdat.hpp`.
 
-- `xcdat::trie_7_type`: 
-- `xcdat::trie_8_type`:
+### Trie dictionary types
 
-### Dictionary class
+The two dictionary types are difined.
+
+- `xcdat::trie_8_type` is the trie dictionary using standard DACs using 8-bit integers for elements.
+- `xcdat::trie_7_type` is the trie dictionary using pointer-based DACs using 7-bit integers for elements.
+
+### Trie dictionary class
+
+The trie dictionary has the following members.
 
 ```c++
 //! A compressed string dictionary based on an improved double-array trie.
@@ -350,7 +356,7 @@ class trie {
     //! Get the number of unused DA units.
     std::uint64_t num_free_units() const;
 
-    //! Get the number of unused DA units.
+    //! Get the length of TAIL vector.
     std::uint64_t tail_length() const;
 
     //! Lookup the ID of the keyword.
