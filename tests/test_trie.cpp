@@ -14,6 +14,10 @@
 using trie_type = xcdat::trie_7_type;
 #elif TRIE_8
 using trie_type = xcdat::trie_8_type;
+#elif TRIE_15
+using trie_type = xcdat::trie_15_type;
+#elif TRIE_16
+using trie_type = xcdat::trie_16_type;
 #endif
 
 void test_basic_operations(const trie_type& trie, const std::vector<std::string>& keys,

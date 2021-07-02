@@ -144,5 +144,11 @@ int main(int argc, char** argv) {
     tfm::printfln("** xcdat::trie_8_type **");
     benchmark<xcdat::trie_8_type>(keys, query_keys, binary_mode);
 
+    tfm::printfln("** xcdat::trie_15_type **");
+    benchmark<xcdat::trie_15_type>(keys, query_keys, binary_mode);
+
+    tfm::printfln("** xcdat::trie_16_type **");
+    benchmark<xcdat::trie_16_type>(keys, query_keys, binary_mode);
+
     return 0;
 }

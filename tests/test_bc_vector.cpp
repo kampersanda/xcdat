@@ -5,6 +5,8 @@
 
 #include "doctest/doctest.h"
 #include "test_common.hpp"
+#include "xcdat/bc_vector_15.hpp"
+#include "xcdat/bc_vector_16.hpp"
 #include "xcdat/bc_vector_7.hpp"
 #include "xcdat/bc_vector_8.hpp"
 
@@ -12,6 +14,10 @@
 using bc_vector_type = xcdat::bc_vector_7;
 #elif BC_VECTOR_8
 using bc_vector_type = xcdat::bc_vector_8;
+#elif BC_VECTOR_15
+using bc_vector_type = xcdat::bc_vector_15;
+#elif BC_VECTOR_16
+using bc_vector_type = xcdat::bc_vector_16;
 #endif
 
 struct bc_unit {

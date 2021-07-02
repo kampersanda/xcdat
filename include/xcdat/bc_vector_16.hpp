@@ -7,36 +7,36 @@
 
 namespace xcdat {
 
-class bc_vector_8 {
+class bc_vector_16 {
   public:
-    static constexpr std::uint32_t l1_bits = sizeof(std::uint8_t) * 8;
-    static constexpr std::uint32_t max_levels = sizeof(std::uint64_t) / sizeof(std::uint8_t);
+    static constexpr std::uint32_t l1_bits = sizeof(std::uint16_t) * 8;
+    static constexpr std::uint32_t max_levels = sizeof(std::uint64_t) / sizeof(std::uint16_t);
 
   private:
     std::uint32_t m_num_levels = 0;
     std::uint64_t m_num_frees = 0;
-    std::array<immutable_vector<std::uint8_t>, max_levels> m_bytes;
+    std::array<immutable_vector<std::uint16_t>, max_levels> m_shorts;
     std::array<bit_vector, max_levels - 1> m_nexts;
     compact_vector m_links;
     bit_vector m_leaves;
 
   public:
-    bc_vector_8() = default;
-    virtual ~bc_vector_8() = default;
+    bc_vector_16() = default;
+    virtual ~bc_vector_16() = default;
 
-    bc_vector_8(const bc_vector_8&) = delete;
-    bc_vector_8& operator=(const bc_vector_8&) = delete;
+    bc_vector_16(const bc_vector_16&) = delete;
+    bc_vector_16& operator=(const bc_vector_16&) = delete;
 
-    bc_vector_8(bc_vector_8&&) noexcept = default;
-    bc_vector_8& operator=(bc_vector_8&&) noexcept = default;
+    bc_vector_16(bc_vector_16&&) noexcept = default;
+    bc_vector_16& operator=(bc_vector_16&&) noexcept = default;
 
     template <class BcUnits>
-    explicit bc_vector_8(const BcUnits& bc_units, bit_vector::builder&& leaves) {
-        std::array<std::vector<std::uint8_t>, max_levels> bytes;
+    explicit bc_vector_16(const BcUnits& bc_units, bit_vector::builder&& leaves) {
+        std::array<std::vector<std::uint16_t>, max_levels> shorts;
         std::array<bit_vector::builder, max_levels> next_flags;  // The last will not be released
         std::vector<std::uint64_t> links;
 
-        bytes[0].reserve(bc_units.size() * 2);
+        shorts[0].reserve(bc_units.size() * 2);
         next_flags[0].reserve(bc_units.size() * 2);
         links.reserve(bc_units.size());
 
@@ -44,23 +44,23 @@ class bc_vector_8 {
 
         auto append_unit = [&](std::uint64_t x) {
             std::uint32_t j = 0;
-            bytes[j].push_back(static_cast<std::uint8_t>(x & 0xFFU));
+            shorts[j].push_back(static_cast<std::uint16_t>(x & 0xFFFFU));
             next_flags[j].push_back(true);
-            x >>= 8;
+            x >>= 16;
             while (x) {
                 ++j;
-                bytes[j].push_back(static_cast<std::uint8_t>(x & 0xFFU));
+                shorts[j].push_back(static_cast<std::uint16_t>(x & 0xFFFFU));
                 next_flags[j].push_back(true);
-                x >>= 8;
+                x >>= 16;
             }
             next_flags[j].set_bit(next_flags[j].size() - 1, false);
             m_num_levels = std::max(m_num_levels, j);
         };
 
         auto append_leaf = [&](std::uint64_t x) {
-            bytes[0].push_back(static_cast<std::uint8_t>(x & 0xFFU));
+            shorts[0].push_back(static_cast<std::uint16_t>(x & 0xFFFFU));
             next_flags[0].push_back(false);
-            links.push_back(x >> 8);
+            links.push_back(x >> 16);
         };
 
         for (std::uint64_t i = 0; i < bc_units.size(); ++i) {
@@ -77,10 +77,10 @@ class bc_vector_8 {
 
         // release
         for (std::uint32_t i = 0; i < m_num_levels; ++i) {
-            m_bytes[i].build(bytes[i]);
+            m_shorts[i].build(shorts[i]);
             m_nexts[i] = bit_vector(next_flags[i], true, false);
         }
-        m_bytes[m_num_levels].build(bytes[m_num_levels]);
+        m_shorts[m_num_levels].build(shorts[m_num_levels]);
         m_links = compact_vector(links);
         m_leaves = bit_vector(leaves, true, false);
     }
@@ -94,7 +94,7 @@ class bc_vector_8 {
     }
 
     inline std::uint64_t link(std::uint64_t i) const {
-        return m_bytes[0][i * 2] | (m_links[m_leaves.rank(i)] << 8);
+        return m_shorts[0][i * 2] | (m_links[m_leaves.rank(i)] << 16);
     }
 
     inline bool is_leaf(std::uint64_t i) const {
@@ -106,7 +106,7 @@ class bc_vector_8 {
     }
 
     inline std::uint64_t num_units() const {
-        return m_bytes[0].size() / 2;
+        return m_shorts[0].size() / 2;
     }
 
     inline std::uint64_t num_free_units() const {
@@ -125,8 +125,8 @@ class bc_vector_8 {
     void visit(Visitor& visitor) {
         visitor.visit(m_num_levels);
         visitor.visit(m_num_frees);
-        for (std::uint32_t j = 0; j < m_bytes.size(); j++) {
-            visitor.visit(m_bytes[j]);
+        for (std::uint32_t j = 0; j < m_shorts.size(); j++) {
+            visitor.visit(m_shorts[j]);
         }
         for (std::uint32_t j = 0; j < m_nexts.size(); j++) {
             visitor.visit(m_nexts[j]);
@@ -138,10 +138,10 @@ class bc_vector_8 {
   private:
     inline std::uint64_t access(std::uint64_t i) const {
         std::uint32_t j = 0;
-        std::uint64_t x = m_bytes[j][i];
+        std::uint64_t x = m_shorts[j][i];
         while (j < m_num_levels and m_nexts[j][i]) {
             i = m_nexts[j++].rank(i);
-            x |= static_cast<std::uint64_t>(m_bytes[j][i]) << (j * 8);
+            x |= static_cast<std::uint64_t>(m_shorts[j][i]) << (j * 16);
         }
         return x;
     }

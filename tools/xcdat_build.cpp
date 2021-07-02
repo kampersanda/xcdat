@@ -7,7 +7,7 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     cmd_line_parser::parser p(argc, argv);
     p.add("input_keys", "Input filepath of keywords");
     p.add("output_dic", "Output filepath of trie dictionary");
-    p.add("trie_type", "Trie type: [7|8] (default=7)", "-t", false);
+    p.add("trie_type", "Trie type: [7|8|15|16] (default=8)", "-t", false);
     p.add("binary_mode", "Is binary mode? (default=0)", "-b", false);
     return p;
 }
@@ -51,13 +51,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const auto trie_type = p.get<int>("trie_type", 7);
+    const auto trie_type = p.get<int>("trie_type", 8);
 
     switch (trie_type) {
         case 7:
             return build<xcdat::trie_7_type>(p);
         case 8:
             return build<xcdat::trie_8_type>(p);
+        case 15:
+            return build<xcdat::trie_15_type>(p);
+        case 16:
+            return build<xcdat::trie_16_type>(p);
         default:
             break;
     }

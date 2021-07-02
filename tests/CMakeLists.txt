@@ -7,7 +7,7 @@ add_test(test_compact_vector test_compact_vector)
 add_executable(test_tail_vector test_tail_vector.cpp)
 add_test(test_tail_vector test_tail_vector)
 
-set(BC_OPTIONS "7" "8")
+set(BC_OPTIONS "7" "8" "15" "16")
 
 foreach(BC_OPTION ${BC_OPTIONS})
     set(TEST_SRC_NAME test_bc_vector_${BC_OPTION})

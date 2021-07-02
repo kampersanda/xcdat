@@ -1,5 +1,7 @@
 #pragma once
 
+#include "xcdat/bc_vector_15.hpp"
+#include "xcdat/bc_vector_16.hpp"
 #include "xcdat/bc_vector_7.hpp"
 #include "xcdat/bc_vector_8.hpp"
 #include "xcdat/load_visitor.hpp"
@@ -11,7 +13,10 @@
 namespace xcdat {
 
 using trie_8_type = trie<bc_vector_8>;
+using trie_16_type = trie<bc_vector_16>;
+
 using trie_7_type = trie<bc_vector_7>;
+using trie_15_type = trie<bc_vector_15>;
 
 //! Set the continuous memory block to a new trie instance (for a memory-mapped file).
 template <class Trie>

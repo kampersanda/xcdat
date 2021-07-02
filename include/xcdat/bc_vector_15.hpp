@@ -7,41 +7,38 @@
 
 namespace xcdat {
 
-class bc_vector_7 {
+class bc_vector_15 {
   public:
-    static constexpr std::uint32_t l1_bits = 7;
-    static constexpr std::uint32_t max_levels = 4;
+    static constexpr std::uint32_t l1_bits = 15;
+    static constexpr std::uint32_t max_levels = 3;
 
-    static constexpr std::uint64_t block_size_l1 = 1ULL << 7;
-    static constexpr std::uint64_t block_size_l2 = 1ULL << 15;
-    static constexpr std::uint64_t block_size_l3 = 1ULL << 31;
+    static constexpr std::uint64_t block_size_l1 = 1ULL << 15;
+    static constexpr std::uint64_t block_size_l2 = 1ULL << 31;
 
   private:
     std::uint64_t m_num_frees = 0;
-    immutable_vector<std::uint8_t> m_ints_l1;
-    immutable_vector<std::uint16_t> m_ints_l2;
-    immutable_vector<std::uint32_t> m_ints_l3;
-    immutable_vector<std::uint64_t> m_ints_l4;
+    immutable_vector<std::uint16_t> m_ints_l1;
+    immutable_vector<std::uint32_t> m_ints_l2;
+    immutable_vector<std::uint64_t> m_ints_l3;
     std::array<immutable_vector<std::uint64_t>, max_levels - 1> m_ranks;
     compact_vector m_links;
     bit_vector m_leaves;
 
   public:
-    bc_vector_7() = default;
-    virtual ~bc_vector_7() = default;
+    bc_vector_15() = default;
+    virtual ~bc_vector_15() = default;
 
-    bc_vector_7(const bc_vector_7&) = delete;
-    bc_vector_7& operator=(const bc_vector_7&) = delete;
+    bc_vector_15(const bc_vector_15&) = delete;
+    bc_vector_15& operator=(const bc_vector_15&) = delete;
 
-    bc_vector_7(bc_vector_7&&) noexcept = default;
-    bc_vector_7& operator=(bc_vector_7&&) noexcept = default;
+    bc_vector_15(bc_vector_15&&) noexcept = default;
+    bc_vector_15& operator=(bc_vector_15&&) noexcept = default;
 
     template <class BcUnits>
-    explicit bc_vector_7(const BcUnits& bc_units, bit_vector::builder&& leaves) {
-        std::vector<std::uint8_t> ints_l1;
-        std::vector<std::uint16_t> ints_l2;
-        std::vector<std::uint32_t> ints_l3;
-        std::vector<std::uint64_t> ints_l4;
+    explicit bc_vector_15(const BcUnits& bc_units, bit_vector::builder&& leaves) {
+        std::vector<std::uint16_t> ints_l1;
+        std::vector<std::uint32_t> ints_l2;
+        std::vector<std::uint64_t> ints_l3;
         std::array<std::vector<std::uint64_t>, max_levels - 1> ranks;
         std::vector<std::uint64_t> links;
 
@@ -54,44 +51,33 @@ class bc_vector_7 {
                 ranks[0].push_back(static_cast<std::uint64_t>(ints_l2.size()));
             }
             if ((x / block_size_l1) == 0) {
-                ints_l1.push_back(static_cast<std::uint8_t>(0 | (x << 1)));
+                ints_l1.push_back(static_cast<std::uint16_t>(0 | (x << 1)));
                 return;
             } else {
                 const auto i = ints_l2.size() - ranks[0].back();
-                ints_l1.push_back(static_cast<std::uint8_t>(1 | (i << 1)));
+                ints_l1.push_back(static_cast<std::uint16_t>(1 | (i << 1)));
             }
 
             if ((ints_l2.size() % block_size_l2) == 0) {
                 ranks[1].push_back(static_cast<std::uint64_t>(ints_l3.size()));
             }
             if ((x / block_size_l2) == 0) {
-                ints_l2.push_back(static_cast<std::uint16_t>(0 | (x << 1)));
+                ints_l2.push_back(static_cast<std::uint32_t>(0 | (x << 1)));
                 return;
             } else {
                 const auto i = ints_l3.size() - ranks[1].back();
-                ints_l2.push_back(static_cast<std::uint16_t>(1 | (i << 1)));
+                ints_l2.push_back(static_cast<std::uint32_t>(1 | (i << 1)));
             }
 
-            if ((ints_l3.size() % block_size_l3) == 0) {
-                ranks[2].push_back(static_cast<std::uint64_t>(ints_l4.size()));
-            }
-            if ((x / block_size_l3) == 0) {
-                ints_l3.push_back(static_cast<std::uint32_t>(0 | (x << 1)));
-                return;
-            } else {
-                const auto i = ints_l4.size() - ranks[2].back();
-                ints_l3.push_back(static_cast<std::uint32_t>(1 | (i << 1)));
-            }
-
-            ints_l4.push_back(x);
+            ints_l3.push_back(x);
         };
 
         auto append_leaf = [&](std::uint64_t x) {
             if ((ints_l1.size() % block_size_l1) == 0) {
                 ranks[0].push_back(static_cast<std::uint64_t>(ints_l2.size()));
             }
-            ints_l1.push_back(static_cast<std::uint8_t>(x & 0xFFU));
-            links.push_back(x >> 8);
+            ints_l1.push_back(static_cast<std::uint16_t>(x & 0xFFFFU));
+            links.push_back(x >> 16);
         };
 
         for (std::uint64_t i = 0; i < bc_units.size(); ++i) {
@@ -110,7 +96,6 @@ class bc_vector_7 {
         m_ints_l1.build(ints_l1);
         m_ints_l2.build(ints_l2);
         m_ints_l3.build(ints_l3);
-        m_ints_l4.build(ints_l4);
         for (std::uint32_t j = 0; j < m_ranks.size(); ++j) {
             m_ranks[j].build(ranks[j]);
         }
@@ -127,7 +112,7 @@ class bc_vector_7 {
     }
 
     inline std::uint64_t link(std::uint64_t i) const {
-        return m_ints_l1[i * 2] | (m_links[m_leaves.rank(i)] << 8);
+        return m_ints_l1[i * 2] | (m_links[m_leaves.rank(i)] << 16);
     }
 
     inline bool is_leaf(std::uint64_t i) const {
@@ -160,7 +145,6 @@ class bc_vector_7 {
         visitor.visit(m_ints_l1);
         visitor.visit(m_ints_l2);
         visitor.visit(m_ints_l3);
-        visitor.visit(m_ints_l4);
         for (std::uint32_t j = 0; j < m_ranks.size(); j++) {
             visitor.visit(m_ranks[j]);
         }
@@ -182,13 +166,7 @@ class bc_vector_7 {
         }
         i = m_ranks[1][i / block_size_l2] + x;
 
-        x = m_ints_l3[i] >> 1;
-        if ((m_ints_l3[i] & 1U) == 0) {
-            return x;
-        }
-        i = m_ranks[2][i / block_size_l3] + x;
-
-        return m_ints_l4[i];
+        return m_ints_l3[i];
     }
 };
 
