@@ -20,28 +20,28 @@ template <class Trie>
 
     std::uint32_t flag;
     visitor.visit(flag);
-    XCDAT_THROW_IF(flag != Trie::l1_bits, "The input index type is different.");
+    XCDAT_THROW_IF(flag != Trie::l1_bits, "The input dictionary type is different.");
 
     Trie idx;
     visitor.visit(idx);
     return idx;
 }
 
-//! Load the trie index from the file.
+//! Load the trie dictionary from the file.
 template <class Trie>
 [[maybe_unused]] Trie load(std::string_view filepath) {
     load_visitor visitor(filepath);
 
     std::uint32_t flag;
     visitor.visit(flag);
-    XCDAT_THROW_IF(flag != Trie::l1_bits, "The input index type is different.");
+    XCDAT_THROW_IF(flag != Trie::l1_bits, "The input dictionary type is different.");
 
     Trie idx;
     visitor.visit(idx);
     return idx;
 }
 
-//! Save the trie index to the file and returns the file size in bytes.
+//! Save the trie dictionary to the file and returns the file size in bytes.
 template <class Trie>
 [[maybe_unused]] std::uint64_t save(const Trie& idx, std::string_view filepath) {
     save_visitor visitor(filepath);
@@ -50,7 +50,7 @@ template <class Trie>
     return visitor.bytes();
 }
 
-//! Get the index size in bytes.
+//! Get the dictionary size in bytes.
 template <class Trie>
 [[maybe_unused]] std::uint64_t memory_in_bytes(const Trie& idx) {
     size_visitor visitor;
@@ -59,7 +59,7 @@ template <class Trie>
     return visitor.bytes();
 }
 
-//! Get the flag indicating the trie type, embedded by the function 'save'.
+//! Get the flag indicating the trie dictionary type, embedded by the function 'save'.
 //! The flag corresponds to trie::l1_bits and will be used to detect the trie type from the file.
 [[maybe_unused]] std::uint32_t get_flag(std::string_view filepath) {
     std::ifstream ifs(filepath);

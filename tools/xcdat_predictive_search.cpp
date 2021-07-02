@@ -1,22 +1,22 @@
+#include <mm_file/mm_file.hpp>
 #include <xcdat.hpp>
 
 #include "cmd_line_parser/parser.hpp"
-#include "mm_file/mm_file.hpp"
 #include "tinyformat/tinyformat.h"
 
 cmd_line_parser::parser make_parser(int argc, char** argv) {
     cmd_line_parser::parser p(argc, argv);
-    p.add("input_idx", "Input filepath of trie index");
+    p.add("input_dic", "Input filepath of trie dictionary");
     p.add("max_num_results", "The max number of results (default=10)", "-n", false);
     return p;
 }
 
 template <class Trie>
 int predictive_search(const cmd_line_parser::parser& p) {
-    const auto input_idx = p.get<std::string>("input_idx");
+    const auto input_dic = p.get<std::string>("input_dic");
     const auto max_num_results = p.get<std::uint64_t>("max_num_results", 10);
 
-    const mm::file_source<char> fin(input_idx.c_str(), mm::advice::sequential);
+    const mm::file_source<char> fin(input_dic.c_str(), mm::advice::sequential);
     const auto trie = xcdat::mmap<Trie>(fin.data());
 
     struct result_type {
@@ -53,8 +53,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const auto input_idx = p.get<std::string>("input_idx");
-    const auto flag = xcdat::get_flag(input_idx);
+    const auto input_dic = p.get<std::string>("input_dic");
+    const auto flag = xcdat::get_flag(input_dic);
 
     switch (flag) {
         case 7:

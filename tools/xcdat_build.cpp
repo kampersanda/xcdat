@@ -1,5 +1,3 @@
-#include <chrono>
-
 #include <xcdat.hpp>
 
 #include "cmd_line_parser/parser.hpp"
@@ -7,8 +5,8 @@
 
 cmd_line_parser::parser make_parser(int argc, char** argv) {
     cmd_line_parser::parser p(argc, argv);
-    p.add("input_keys", "Input filepath of data keys");
-    p.add("output_idx", "Output filepath of trie index");
+    p.add("input_keys", "Input filepath of keywords");
+    p.add("output_dic", "Output filepath of trie dictionary");
     p.add("trie_type", "Trie type: [7|8] (default=7)", "-t", false);
     p.add("binary_mode", "Is binary mode? (default=0)", "-b", false);
     return p;
@@ -17,7 +15,7 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
 template <class Trie>
 int build(const cmd_line_parser::parser& p) {
     const auto input_keys = p.get<std::string>("input_keys");
-    const auto output_idx = p.get<std::string>("output_idx");
+    const auto output_dic = p.get<std::string>("output_dic");
     const auto binary_mode = p.get<bool>("binary_mode", false);
 
     auto keys = xcdat::load_strings(input_keys);
@@ -37,7 +35,7 @@ int build(const cmd_line_parser::parser& p) {
     tfm::printfln("Memory usage in bytes: %d", memory_in_bytes);
     tfm::printfln("Memory usage in MiB: %g", memory_in_bytes / (1024.0 * 1024.0));
 
-    xcdat::save(trie, output_idx);
+    xcdat::save(trie, output_dic);
 
     return 0;
 }

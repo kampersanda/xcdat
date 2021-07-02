@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
 
+#include <mm_file/mm_file.hpp>
 #include <xcdat.hpp>
 
 int main() {
-    // Input keys
+    // Dataset of keywords
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
@@ -14,27 +15,32 @@ int main() {
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
-    const char* index_filename = "tmp.idx";
-
-    // The trie index type
+    // The trie dictionary type
     using trie_type = xcdat::trie_8_type;
 
-    // Build and save the trie index.
+    // The dictionary filename
+    const char* tmp_filename = "dic.bin";
+
+    // Build and save the trie dictionary.
     {
         const trie_type trie(keys);
-        xcdat::save(trie, index_filename);
+        xcdat::save(trie, tmp_filename);
     }
 
-    // Load the trie index.
-    const auto trie = xcdat::load<trie_type>(index_filename);
+    // Memory-map the trie dictionary.
+    const mm::file_source<char> fin(tmp_filename, mm::advice::sequential);
+    const auto trie = xcdat::mmap<trie_type>(fin.data());
+
+    // Or, load the trie dictionary on memory.
+    // const auto trie = xcdat::load<trie_type>(tmp_filename);
 
     // Basic statistics
-    std::cout << "NumberKeys: " << trie.num_keys() << std::endl;
-    std::cout << "MaxLength: " << trie.max_length() << std::endl;
-    std::cout << "AlphabetSize: " << trie.alphabet_size() << std::endl;
-    std::cout << "Memory: " << xcdat::memory_in_bytes(trie) << " bytes" << std::endl;
+    std::cout << "Number of keys: " << trie.num_keys() << std::endl;
+    std::cout << "Number of trie nodes: " << trie.num_nodes() << std::endl;
+    std::cout << "Number of DA units: " << trie.num_units() << std::endl;
+    std::cout << "Memory usage in bytes: " << xcdat::memory_in_bytes(trie) << std::endl;
 
-    // Lookup IDs from keys
+    // Lookup the ID for a query key.
     {
         const auto id = trie.lookup("Mac_Pro");
         std::cout << "Lookup(Mac_Pro) = " << id.value_or(UINT64_MAX) << std::endl;
@@ -44,7 +50,7 @@ int main() {
         std::cout << "Lookup(Google_Pixel) = " << id.value_or(UINT64_MAX) << std::endl;
     }
 
-    // Decode keys from IDs
+    // Decode the key for a query ID.
     {
         const auto dec = trie.decode(4);
         std::cout << "Decode(4) = " << dec << std::endl;
@@ -80,6 +86,7 @@ int main() {
         std::cout << "}" << std::endl;
     }
 
-    std::remove(index_filename);
+    std::remove(tmp_filename);
+
     return 0;
 }

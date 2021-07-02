@@ -1,6 +1,6 @@
 # Xcdat: Fast compressed trie dictionary library
 
-**Xcdat** is a C++17 header-only library of a fast compressed string dictionary based on the improved double-array trie structure described in the paper: [Compressed double-array tries for string dictionaries supporting fast lookup](https://doi.org/10.1007/s10115-016-0999-8), *Knowledge and Information Systems*, 2017, available at [here](https://kampersanda.github.io/pdf/KAIS2017.pdf).
+**Xcdat** is a C++17 header-only library of a fast compressed string dictionary based on an improved double-array trie structure described in the paper: [Compressed double-array tries for string dictionaries supporting fast lookup](https://doi.org/10.1007/s10115-016-0999-8), *Knowledge and Information Systems*, 2017, available at [here](https://kampersanda.github.io/pdf/KAIS2017.pdf).
 
 ## Table of contents
 
@@ -17,8 +17,8 @@
 ## Features
 
 - **Compressed string dictionary.** Xcdat implements a (static) *compressed string dictioanry* that stores a set of strings (or keywords) in a compressed space while supporting several search operations [1,2]. For example, Xcdat can store an entire set of English Wikipedia titles at half the size of the raw data.
-- **Fast and compact data structure.** Xcdat employs the *double-array trie* [3] known as the fastest data structure for trie implementation. However, the double-array trie resorts to many pointers and consumes a large amount of memory. To address this, Xcdat applies the *XCDA* method [2] that represents the double-array trie in a compressed format while maintaining the fast searches.
-- **Cache efficiency.** Xcdat employs a *minimal-prefix trie* [4] that replaces redundant trie nodes into strings, resulting in reducing random access and improving locality of references.
+- **Fast and compact data structure.** Xcdat employs the *double-array trie* [3] known as the fastest trie implementation. However, the double-array trie resorts to many pointers and consumes a large amount of memory. To address this, Xcdat applies the *XCDA* method [2] that represents the double-array trie in a compressed format while maintaining the fast searches.
+- **Cache efficiency.** Xcdat employs a *minimal-prefix trie* [4] that replaces redundant trie nodes into strings to reduce random access and to improve locality of references.
 - **Dictionary encoding.** Xcdat maps `N` distinct keywords into unique IDs from `[0,N-1]`, and supports the two symmetric operations: `lookup` returns the ID corresponding to a given keyword; `decode` returns the keyword associated with a given ID. The mapping is so-called *dictionary encoding* (or *domain encoding*) and is fundamental in many DB applications as described by Martínez-Prieto et al [1] or Müller et al. [5].
 - **Prefix search operations.** Xcdat supports prefix search operations realized by trie search algorithms: `prefix_search` returns all the keywords contained as prefixes of a given string; `predictive search` returns all the keywords starting with a given string. These will be useful in many NLP applications such as auto completions [6], stemmed searches [7], or input method editors [8].
 - **64-bit support.** As mentioned before, since the double array is a pointer-based data structure, most double-array libraries use 32-bit pointers to reduce memory consumption, resulting in limiting the scale of the input dataset. On the other hand, the XCDA method allows Xcdat to represent 64-bit pointers without sacrificing memory efficiency.
@@ -50,11 +50,11 @@ The library considers a 64-bit operating system. The code has been tested only o
 
 ## Command line tools
 
- Xcdat provides command line tools to build the index and perform searches, which are inspired by [marisa-trie](https://github.com/s-yata/marisa-trie). All the tools will print the command line options by specifying the parameter `-h`.
+ Xcdat provides command line tools to build the dictionary and perform searches, which are inspired by [marisa-trie](https://github.com/s-yata/marisa-trie). All the tools will print the command line options by specifying the parameter `-h`.
 
 ### `xcdat_build`
 
-It builds the trie index from a given dataset consisting of keywords separated by newlines. The following command builds the trie index from dataset `enwiki-titles.txt` and writes the index into file `idx.bin`.
+It builds the trie dictionary from a given dataset consisting of keywords separated by newlines. The following command builds the trie dictionary from dataset `enwiki-titles.txt` and writes the dictionary into file `idx.bin`.
 
 ```
 $ xcdat_build enwiki-titles.txt idx.bin
@@ -67,7 +67,7 @@ Memory usage in MiB: 162.714
 
 ### `xcdat_lookup`
 
-It tests the `lookup` operation for a given index. Given a query string via `stdin`, it prints the associated ID if found, or `-1` otherwise.
+It tests the `lookup` operation for a given dictionary. Given a query string via `stdin`, it prints the associated ID if found, or `-1` otherwise.
 
 ```
 $ xcdat_lookup idx.bin
@@ -79,7 +79,7 @@ Double_Array
 
 ### `xcdat_decode`
 
-It tests the `decode` operation for a given index. Given a query ID via `stdin`, it prints the corresponding keyword if the ID is in the range `[0,N-1]`, where `N` is the number of stored keywords.
+It tests the `decode` operation for a given dictionary. Given a query ID via `stdin`, it prints the corresponding keyword if the ID is in the range `[0,N-1]`, where `N` is the number of stored keywords.
 
 ```
 $ xcdat_decode idx.bin
@@ -89,7 +89,7 @@ $ xcdat_decode idx.bin
 
 ### `xcdat_prefix_search`
 
-It tests the `prefix_search` operation for a given index. Given a query string via `stdin`, it prints all the keywords contained as prefixes of a given string.
+It tests the `prefix_search` operation for a given dictionary. Given a query string via `stdin`, it prints all the keywords contained as prefixes of a given string.
 
 ```
 $ xcdat_prefix_search idx.bin
@@ -105,7 +105,7 @@ Algorithmic
 
 ### `xcdat_predictive_search`
 
-It tests the `predictive_search` operation for a given index. Given a query string via `stdin`, it prints the first `n` keywords starting with a given string, where `n` is one of the parameters.
+It tests the `predictive_search` operation for a given dictionary. Given a query string via `stdin`, it prints the first `n` keywords starting with a given string, where `n` is one of the parameters.
 
 ```
 $ xcdat_predictive_search idx.bin -n 3
@@ -118,7 +118,7 @@ Algorithm
 
 ### `xcdat_enumerate`
 
-It prints all the keywords stored in a given index.
+It prints all the keywords stored in a given dictionary.
 
 ```
 $ xcdat_enumerate idx.bin | head -3
@@ -151,16 +151,17 @@ Decode time in microsec/query: 1.2341
 
 ## Sample usage
 
-`sample/sample.cpp` provides a sample usage.
+`sample/sample.cpp` provides a sample usage. It employs the external library [mm_file](https://github.com/jermp/mm_file) to implement a memory-mapped file, which will be installed by `make install` together.
 
 ```c++
 #include <iostream>
 #include <string>
 
+#include <mm_file/mm_file.hpp>
 #include <xcdat.hpp>
 
 int main() {
-    // Input keys
+    // Dataset
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
@@ -170,27 +171,32 @@ int main() {
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
-    const char* index_filename = "tmp.idx";
-
-    // The trie index type
+    // The trie dictionary type
     using trie_type = xcdat::trie_8_type;
 
-    // Build and save the trie index.
+    // The dictionary filename
+    const char* tmp_filename = "dic.bin";
+
+    // Build and save the trie dictionary.
     {
         const trie_type trie(keys);
-        xcdat::save(trie, index_filename);
+        xcdat::save(trie, tmp_filename);
     }
 
-    // Load the trie index.
-    const auto trie = xcdat::load<trie_type>(index_filename);
+    // Memory-map the trie dictionary.
+    const mm::file_source<char> fin(tmp_filename, mm::advice::sequential);
+    const auto trie = xcdat::mmap<trie_type>(fin.data());
+
+    // Or, load the trie dictionary on memory.
+    // const auto trie = xcdat::load<trie_type>(tmp_filename);
 
     // Basic statistics
-    std::cout << "NumberKeys: " << trie.num_keys() << std::endl;
-    std::cout << "MaxLength: " << trie.max_length() << std::endl;
-    std::cout << "AlphabetSize: " << trie.alphabet_size() << std::endl;
-    std::cout << "Memory: " << xcdat::memory_in_bytes(trie) << " bytes" << std::endl;
+    std::cout << "Number of keys: " << trie.num_keys() << std::endl;
+    std::cout << "Number of trie nodes: " << trie.num_nodes() << std::endl;
+    std::cout << "Number of DA units: " << trie.num_units() << std::endl;
+    std::cout << "Memory usage in bytes: " << xcdat::memory_in_bytes(trie) << std::endl;
 
-    // Lookup IDs from keys
+    // Lookup the ID for a query key.
     {
         const auto id = trie.lookup("Mac_Pro");
         std::cout << "Lookup(Mac_Pro) = " << id.value_or(UINT64_MAX) << std::endl;
@@ -200,7 +206,7 @@ int main() {
         std::cout << "Lookup(Google_Pixel) = " << id.value_or(UINT64_MAX) << std::endl;
     }
 
-    // Decode keys from IDs
+    // Decode the key for a query ID.
     {
         const auto dec = trie.decode(4);
         std::cout << "Decode(4) = " << dec << std::endl;
@@ -236,7 +242,8 @@ int main() {
         std::cout << "}" << std::endl;
     }
 
-    std::remove(index_filename);
+    std::remove(tmp_filename);
+
     return 0;
 }
 ```
@@ -244,10 +251,10 @@ int main() {
 The output will be
 
 ```
-NumberKeys: 12
-MaxLength: 11
-AlphabetSize: 20
-Memory: 1762 bytes
+Number of keys: 12
+Number of trie nodes: 28
+Number of DA units: 256
+Memory usage in bytes: 1766
 Lookup(Mac_Pro) = 7
 Lookup(Google_Pixel) = 18446744073709551615
 Decode(4) = MacBook_Air
@@ -451,15 +458,15 @@ class trie {
 template <class Trie>
 Trie mmap(const char* address);
 
-//! Load the trie index from the file.
+//! Load the trie dictionary from the file.
 template <class Trie>
 Trie load(std::string_view filepath);
 
-//! Save the trie index to the file and returns the file size in bytes.
+//! Save the trie dictionary to the file and returns the file size in bytes.
 template <class Trie>
 std::uint64_t save(const Trie& idx, std::string_view filepath);
 
-//! Get the index size in bytes.
+//! Get the dictionary size in bytes.
 template <class Trie>
 std::uint64_t memory_in_bytes(const Trie& idx);
 

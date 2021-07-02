@@ -87,6 +87,9 @@ class trie_builder {
         // Build the BC units
         arrange(0, m_keys.size(), 0, 0);
 
+        // Finish
+        finish();
+
         // Build the TAIL vector
         m_suffixes.complete(m_bin_mode, [&](std::uint64_t npos, std::uint64_t tpos) { m_units[npos].base = tpos; });
     }
@@ -158,6 +161,13 @@ class trie_builder {
         const auto bpos = old_size / 256;
         if (free_blocks <= bpos) {
             close_block(bpos - free_blocks);
+        }
+    }
+
+    void finish() {
+        while (m_units[taboo_npos].base != taboo_npos) {
+            auto bpos = m_units[taboo_npos].base / 256;
+            close_block(bpos);
         }
     }
 
