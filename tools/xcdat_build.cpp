@@ -33,6 +33,7 @@ int build(const cmd_line_parser::parser& p) {
 
     tfm::printfln("Number of keys: %d", trie.num_keys());
     tfm::printfln("Number of trie nodes: %d", trie.num_nodes());
+    tfm::printfln("Number of DA units: %d", trie.num_units());
     tfm::printfln("Memory usage in bytes: %d", memory_in_bytes);
     tfm::printfln("Memory usage in MiB: %g", memory_in_bytes / (1024.0 * 1024.0));
 

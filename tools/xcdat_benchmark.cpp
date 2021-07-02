@@ -48,14 +48,7 @@ Trie benchmark_build(const std::vector<std::string>& keys, bool binary_mode) {
     const double time_in_sec = dur_ms.count() / 1000.0;
     const double memory_in_bytes = xcdat::memory_in_bytes(trie);
 
-    tfm::printfln("Binary mode: %d", trie.bin_mode());
-    tfm::printfln("Alphabet size: %d", trie.alphabet_size());
-    tfm::printfln("Max key length: %d", trie.max_length());
     tfm::printfln("Number of keys: %d", trie.num_keys());
-    tfm::printfln("Number of trie nodes: %d", trie.num_nodes());
-    tfm::printfln("Number of DA units: %d", trie.num_units());
-    tfm::printfln("Number of free DA units: %d", trie.num_free_units());
-    tfm::printfln("TAIL length: %d", trie.tail_length());
     tfm::printfln("Memory usage in bytes: %d", memory_in_bytes);
     tfm::printfln("Memory usage in MiB: %g", memory_in_bytes / (1024.0 * 1024.0));
     tfm::printfln("Construction time in seconds: %g", time_in_sec);

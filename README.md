@@ -60,6 +60,7 @@ It builds the trie index from a given dataset consisting of keywords separated b
 $ xcdat_build enwiki-titles.txt idx.bin
 Number of keys: 15955763
 Number of trie nodes: 36441058
+Number of DA units: 36520704
 Memory usage in bytes: 1.70618e+08
 Memory usage in MiB: 162.714
 ```
@@ -128,38 +129,24 @@ $ xcdat_enumerate idx.bin | head -3
 
 ### `xcdat_benchmark`
 
-It measures the performance of Xcdat for a given dataset.
+It measures the performances of possible tries for a given dataset. To perform search operations, it randomly samples `n` queires from the dataset, where `n` is one of the parameters.
 
 ```
 $ xcdat_benchmark enwiki-titles.txt
 ** xcdat::trie_7_type **
-Binary mode: 0
-Alphabet size: 198
-Max key length: 253
 Number of keys: 15955763
-Number of trie nodes: 36441058
-Number of DA units: 36520704
-Number of free DA units: 79646
-TAIL length: 30776290
 Memory usage in bytes: 1.70618e+08
 Memory usage in MiB: 162.714
-Construction time in seconds: 11.828
-Lookup time in microsec/query: 0.8259
-Decode time in microsec/query: 1.4545
+Construction time in seconds: 12.907
+Lookup time in microsec/query: 0.4674
+Decode time in microsec/query: 0.8722
 ** xcdat::trie_8_type **
-Binary mode: 0
-Alphabet size: 198
-Max key length: 253
 Number of keys: 15955763
-Number of trie nodes: 36441035
-Number of DA units: 36515840
-Number of free DA units: 74805
-TAIL length: 30776290
 Memory usage in bytes: 1.64104e+08
 Memory usage in MiB: 156.502
-Construction time in seconds: 11.966
-Lookup time in microsec/query: 0.844
-Decode time in microsec/query: 1.0029
+Construction time in seconds: 13.442
+Lookup time in microsec/query: 0.7593
+Decode time in microsec/query: 1.2341
 ```
 
 ## Sample usage
