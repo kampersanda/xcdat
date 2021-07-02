@@ -13,7 +13,7 @@ namespace xcdat {
 using trie_8_type = trie<bc_vector_8>;
 using trie_7_type = trie<bc_vector_7>;
 
-//! Set the continuous memory block to a new trie instance.
+//! Set the continuous memory block to a new trie instance (for a memory-mapped file).
 template <class Trie>
 [[maybe_unused]] Trie mmap(const char* address) {
     mmap_visitor visitor(address);

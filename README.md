@@ -289,11 +289,11 @@ Enumerate() = {
 
 ## API
 
-Xcdat can be used by including `xcdat.hpp`.
+Xcdat can be used by including only the header `xcdat.hpp`.
 
 ### Trie dictionary types
 
-The two dictionary types are difined.
+The two dictionary types of specialization of class `xcdat::trie` are difined:
 
 - `xcdat::trie_8_type` is the trie dictionary using standard DACs [9] using 8-bit integers for elements.
 - `xcdat::trie_7_type` is the trie dictionary using pointer-based DACs [2] using 7-bit integers for elements.
@@ -454,7 +454,7 @@ class trie {
 `xcdat.hpp` provides some functions for handling I/O operations.
 
 ```c++
-//! Set the continuous memory block to a new trie instance.
+//! Set the continuous memory block to a new trie instance (for a memory-mapped file).
 template <class Trie>
 Trie mmap(const char* address);
 
