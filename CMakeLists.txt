@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(xcdat VERSION 1.0.0 LANGUAGES CXX)
+project(xcdat VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
