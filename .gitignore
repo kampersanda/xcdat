@@ -29,8 +29,9 @@
 *.app
 
 # My Definition
-build/
+build*/
 cmake-build-debug/
 .idea/
 .DS_Store
 include/xcdat/xcdat_config.hpp
+.vscode/
