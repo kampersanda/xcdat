@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include <string>
 #include <type_traits>
 
 #include "exception.hpp"
@@ -13,7 +13,7 @@ class load_visitor {
     std::ifstream m_ifs;
 
   public:
-    load_visitor(std::string_view filepath) : m_ifs(filepath, std::ios::binary) {
+    load_visitor(const std::string& filepath) : m_ifs(filepath, std::ios::binary) {
         XCDAT_THROW_IF(!m_ifs.good(), "Cannot open the input file");
     }
 

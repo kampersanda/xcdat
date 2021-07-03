@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include <string>
 #include <type_traits>
 
 #include "exception.hpp"
@@ -13,7 +13,7 @@ class save_visitor {
     std::ofstream m_ofs;
 
   public:
-    save_visitor(std::string_view filepath) : m_ofs(filepath, std::ios::binary) {
+    save_visitor(const std::string& filepath) : m_ofs(filepath, std::ios::binary) {
         XCDAT_THROW_IF(!m_ofs.good(), "Cannot open the input file");
     }
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fstream>
+#include <string>
+
 #include "xcdat/bc_vector_15.hpp"
 #include "xcdat/bc_vector_16.hpp"
 #include "xcdat/bc_vector_7.hpp"
@@ -40,7 +43,7 @@ template <class Trie>
 
 //! Load the trie dictionary from the file.
 template <class Trie>
-[[maybe_unused]] Trie load(std::string_view filepath) {
+[[maybe_unused]] Trie load(const std::string& filepath) {
     load_visitor visitor(filepath);
 
     std::uint32_t flag;
@@ -54,7 +57,7 @@ template <class Trie>
 
 //! Save the trie dictionary to the file and returns the file size in bytes.
 template <class Trie>
-[[maybe_unused]] std::uint64_t save(const Trie& idx, std::string_view filepath) {
+[[maybe_unused]] std::uint64_t save(const Trie& idx, const std::string& filepath) {
     save_visitor visitor(filepath);
     visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // flag
     visitor.visit(const_cast<Trie&>(idx));
@@ -72,7 +75,7 @@ template <class Trie>
 
 //! Get the flag indicating the trie dictionary type, embedded by the function 'save'.
 //! The flag corresponds to trie::l1_bits and will be used to detect the trie type from the file.
-[[maybe_unused]] std::uint32_t get_flag(std::string_view filepath) {
+[[maybe_unused]] std::uint32_t get_flag(const std::string& filepath) {
     std::ifstream ifs(filepath);
     XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
 
@@ -82,7 +85,7 @@ template <class Trie>
 }
 
 //! Load the keywords from the file.
-[[maybe_unused]] std::vector<std::string> load_strings(std::string_view filepath, char delim = '\n') {
+[[maybe_unused]] std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n') {
     std::ifstream ifs(filepath);
     XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
 
