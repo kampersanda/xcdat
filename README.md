@@ -488,11 +488,11 @@ Trie mmap(const char* address);
 
 //! Load the trie dictionary from the file.
 template <class Trie>
-Trie load(std::string_view filepath);
+Trie load(const std::string& filepath);
 
 //! Save the trie dictionary to the file and returns the file size in bytes.
 template <class Trie>
-std::uint64_t save(const Trie& idx, std::string_view filepath);
+std::uint64_t save(const Trie& idx, const std::string& filepath);
 
 //! Get the dictionary size in bytes.
 template <class Trie>
@@ -500,10 +500,10 @@ std::uint64_t memory_in_bytes(const Trie& idx);
 
 //! Get the flag indicating the trie type, embedded by the function 'save'.
 //! The flag corresponds to trie::l1_bits and will be used to detect the trie type from the file.
-std::uint32_t get_flag(std::string_view filepath);
+std::uint32_t get_flag(const std::string& filepath);
 
 //! Load the keywords from the file.
-std::vector<std::string> load_strings(std::string_view filepath, char delim = '\n');
+std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n');
 ```
 
 ## Performance
