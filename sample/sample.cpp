@@ -15,15 +15,21 @@ int main() {
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
     // The trie dictionary type
-    using trie_type = xcdat::trie_8_type;
+    using trie_type = xcdat::trie_7_type;
+    // using trie_type = xcdat::trie_8_type;
+    // using trie_type = xcdat::trie_15_type;
+    // using trie_type = xcdat::trie_16_type;
 
     // The dictionary filename
     const char* tmp_filename = "dic.bin";
 
     // Build and save the trie dictionary.
-    {
+    try {
         const trie_type trie(keys);
         xcdat::save(trie, tmp_filename);
+    } catch (const xcdat::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        return 1;
     }
 
     // Load the trie dictionary on memory.
