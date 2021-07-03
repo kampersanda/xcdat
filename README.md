@@ -131,7 +131,7 @@ $ xcdat_enumerate dic.bin | head -3
 
 ### `xcdat_benchmark`
 
-It measures the performances of possible tries for a given dataset. To perform search operations, it randomly samples `n` queires from the dataset, where `n` is one of the parameters.
+Xcdat provides the four dictionary types defined in `xcdat.hpp`. The tool measures the performances of them for a given dataset. To perform search operations, it randomly samples `n` queires from the dataset, where `n` is one of the parameters. It will help you determine the dictionary type.
 
 ```
 $ xcdat_benchmark enwiki-titles.txt
@@ -310,7 +310,7 @@ Xcdat consists of only the header files and can be used by including only the he
 
 ### Trie dictionary types
 
-The four dictionary types of specialization of class `xcdat::trie` are difined. The first two types are based on standard DACs by Brisaboa et al. [9]. The last two types are based on pointer-based DACs by Kanda et al. [2].
+The four specialization types of class `xcdat::trie` are provided in `xcdat.hpp`. The first two types are based on standard DACs by Brisaboa et al. [9]. The last two types are based on pointer-based DACs by Kanda et al. [2].
 
 ```c++
 //! The trie type with standard DACs using 8-bit integers
