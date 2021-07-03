@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 
-#include <mm_file/mm_file.hpp>
 #include <xcdat.hpp>
 
 int main() {
@@ -27,12 +26,8 @@ int main() {
         xcdat::save(trie, tmp_filename);
     }
 
-    // Memory-map the trie dictionary.
-    const mm::file_source<char> fin(tmp_filename, mm::advice::sequential);
-    const auto trie = xcdat::mmap<trie_type>(fin.data());
-
-    // Or, load the trie dictionary on memory.
-    // const auto trie = xcdat::load<trie_type>(tmp_filename);
+    // Load the trie dictionary on memory.
+    const auto trie = xcdat::load<trie_type>(tmp_filename);
 
     // Basic statistics
     std::cout << "Number of keys: " << trie.num_keys() << std::endl;

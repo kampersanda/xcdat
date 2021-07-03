@@ -52,17 +52,19 @@ The library considers a 64-bit operating system. The code has been tested only o
 
  Xcdat provides command line tools to build the dictionary and perform searches, which are inspired by [marisa-trie](https://github.com/s-yata/marisa-trie). All the tools will print the command line options by specifying the parameter `-h`.
 
+The tools employ the external libraries [cmd_line_parser](https://github.com/jermp/cmd_line_parser), [mm_file](https://github.com/jermp/mm_file), and [tinyformat](https://github.com/c42f/tinyformat), which are contained in the repository.
+
 ### `xcdat_build`
 
-It builds the trie dictionary from a given dataset consisting of keywords separated by newlines. The following command builds the trie dictionary from dataset `enwiki-titles.txt` and writes the dictionary into file `idx.bin`.
+It builds the trie dictionary from a given dataset consisting of keywords separated by newlines. The following command builds the trie dictionary from dataset `enwiki-titles.txt` and writes the dictionary into file `dic.bin`.
 
 ```
-$ xcdat_build enwiki-titles.txt idx.bin
+$ xcdat_build enwiki-titles.txt dic.bin
 Number of keys: 15955763
-Number of trie nodes: 36441058
-Number of DA units: 36520704
-Memory usage in bytes: 1.70618e+08
-Memory usage in MiB: 162.714
+Number of trie nodes: 36439320
+Number of DA units: 36515840
+Memory usage in bytes: 1.64104e+08
+Memory usage in MiB: 156.502
 ```
 
 ### `xcdat_lookup`
@@ -70,7 +72,7 @@ Memory usage in MiB: 162.714
 It tests the `lookup` operation for a given dictionary. Given a query string via `stdin`, it prints the associated ID if found, or `-1` otherwise.
 
 ```
-$ xcdat_lookup idx.bin
+$ xcdat_lookup dic.bin
 Algorithm
 1255938	Algorithm
 Double_Array
@@ -82,7 +84,7 @@ Double_Array
 It tests the `decode` operation for a given dictionary. Given a query ID via `stdin`, it prints the corresponding keyword if the ID is in the range `[0,N-1]`, where `N` is the number of stored keywords.
 
 ```
-$ xcdat_decode idx.bin
+$ xcdat_decode dic.bin
 1255938
 1255938	Algorithm
 ```
@@ -92,7 +94,7 @@ $ xcdat_decode idx.bin
 It tests the `prefix_search` operation for a given dictionary. Given a query string via `stdin`, it prints all the keywords contained as prefixes of a given string.
 
 ```
-$ xcdat_prefix_search idx.bin
+$ xcdat_prefix_search dic.bin
 Algorithmic
 6 found
 57	A
@@ -108,7 +110,7 @@ Algorithmic
 It tests the `predictive_search` operation for a given dictionary. Given a query string via `stdin`, it prints the first `n` keywords starting with a given string, where `n` is one of the parameters.
 
 ```
-$ xcdat_predictive_search idx.bin -n 3
+$ xcdat_predictive_search dic.bin -n 3
 Algorithm
 263 found
 1255938	Algorithm
@@ -121,7 +123,7 @@ Algorithm
 It prints all the keywords stored in a given dictionary.
 
 ```
-$ xcdat_enumerate idx.bin | head -3
+$ xcdat_enumerate dic.bin | head -3
 0	!
 107	!!
 138	!!!
@@ -137,31 +139,44 @@ $ xcdat_benchmark enwiki-titles.txt
 Number of keys: 15955763
 Memory usage in bytes: 1.70618e+08
 Memory usage in MiB: 162.714
-Construction time in seconds: 12.907
-Lookup time in microsec/query: 0.4674
-Decode time in microsec/query: 0.8722
+Construction time in seconds: 13.501
+Lookup time in microsec/query: 0.5708
+Decode time in microsec/query: 1.0846
 ** xcdat::trie_8_type **
 Number of keys: 15955763
 Memory usage in bytes: 1.64104e+08
 Memory usage in MiB: 156.502
-Construction time in seconds: 13.442
-Lookup time in microsec/query: 0.7593
-Decode time in microsec/query: 1.2341
+Construction time in seconds: 13.626
+Lookup time in microsec/query: 0.6391
+Decode time in microsec/query: 1.0531
+** xcdat::trie_15_type **
+Number of keys: 15955763
+Memory usage in bytes: 2.05737e+08
+Memory usage in MiB: 196.206
+Construction time in seconds: 13.425
+Lookup time in microsec/query: 0.3613
+Decode time in microsec/query: 0.7044
+** xcdat::trie_16_type **
+Number of keys: 15955763
+Memory usage in bytes: 2.15935e+08
+Memory usage in MiB: 205.932
+Construction time in seconds: 13.704
+Lookup time in microsec/query: 0.3832
+Decode time in microsec/query: 0.8362
 ```
 
 ## Sample usage
 
-`sample/sample.cpp` provides a sample usage. It employs the external library [mm_file](https://github.com/jermp/mm_file) to implement a memory-mapped file, which will be installed by `make install` together.
+`sample/sample.cpp` provides a sample usage.
 
 ```c++
 #include <iostream>
 #include <string>
 
-#include <mm_file/mm_file.hpp>
 #include <xcdat.hpp>
 
 int main() {
-    // Dataset
+    // Dataset of keywords
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
@@ -183,12 +198,8 @@ int main() {
         xcdat::save(trie, tmp_filename);
     }
 
-    // Memory-map the trie dictionary.
-    const mm::file_source<char> fin(tmp_filename, mm::advice::sequential);
-    const auto trie = xcdat::mmap<trie_type>(fin.data());
-
-    // Or, load the trie dictionary on memory.
-    // const auto trie = xcdat::load<trie_type>(tmp_filename);
+    // Load the trie dictionary on memory.
+    const auto trie = xcdat::load<trie_type>(tmp_filename);
 
     // Basic statistics
     std::cout << "Number of keys: " << trie.num_keys() << std::endl;
@@ -293,10 +304,21 @@ Xcdat can be used by including only the header `xcdat.hpp`.
 
 ### Trie dictionary types
 
-The two dictionary types of specialization of class `xcdat::trie` are difined:
+The four dictionary types of specialization of class `xcdat::trie` are difined. The first two types are based on standard DACs by Brisaboa et al. [9]. The last two types are based on pointer-based DACs by Kanda et al. [2].
 
-- `xcdat::trie_8_type` is the trie dictionary using standard DACs [9] using 8-bit integers for elements.
-- `xcdat::trie_7_type` is the trie dictionary using pointer-based DACs [2] using 7-bit integers for elements.
+```c++
+//! The trie type with standard DACs using 8-bit integers
+using trie_8_type = trie<bc_vector_8>;
+
+//! The trie type with standard DACs using 16-bit integers
+using trie_16_type = trie<bc_vector_16>;
+
+//! The trie type with pointer-based DACs using 7-bit integers (for the 1st layer)
+using trie_7_type = trie<bc_vector_7>;
+
+//! The trie type with pointer-based DACs using 15-bit integers (for the 1st layer)
+using trie_15_type = trie<bc_vector_15>;
+```
 
 ### Trie dictionary class
 

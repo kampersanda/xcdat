@@ -1,7 +1,7 @@
-#include <mm_file/mm_file.hpp>
 #include <xcdat.hpp>
 
 #include "cmd_line_parser/parser.hpp"
+#include "mm_file/mm_file.hpp"
 #include "tinyformat/tinyformat.h"
 
 cmd_line_parser::parser make_parser(int argc, char** argv) {
@@ -57,6 +57,10 @@ int main(int argc, char** argv) {
             return prefix_search<xcdat::trie_7_type>(p);
         case 8:
             return prefix_search<xcdat::trie_8_type>(p);
+        case 15:
+            return prefix_search<xcdat::trie_15_type>(p);
+        case 16:
+            return prefix_search<xcdat::trie_16_type>(p);
         default:
             break;
     }

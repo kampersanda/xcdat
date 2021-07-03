@@ -42,7 +42,5 @@ file(COPY ${CMAKE_SOURCE_DIR}/tests/keys.txt DESTINATION ${CMAKE_CURRENT_BINARY_
 
 # Install the library
 file(GLOB XCDAT_HEADER_FILES include/xcdat/*.hpp)
-file(GLOB MM_HEADER_FILES include/mm_file/*.hpp)
 install(FILES include/xcdat.hpp DESTINATION include)
 install(FILES ${XCDAT_HEADER_FILES} DESTINATION include/xcdat)
-install(FILES ${MM_HEADER_FILES} DESTINATION include/mm_file)

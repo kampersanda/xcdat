@@ -135,6 +135,10 @@ void test_io(const trie_type& trie, const std::vector<std::string>& keys, const 
         REQUIRE_EQ(trie.num_keys(), loaded.num_keys());
         REQUIRE_EQ(trie.alphabet_size(), loaded.alphabet_size());
         REQUIRE_EQ(trie.max_length(), loaded.max_length());
+        REQUIRE_EQ(trie.num_nodes(), loaded.num_nodes());
+        REQUIRE_EQ(trie.num_units(), loaded.num_units());
+        REQUIRE_EQ(trie.num_free_units(), loaded.num_free_units());
+        REQUIRE_EQ(trie.tail_length(), loaded.tail_length());
         REQUIRE_EQ(memory, xcdat::memory_in_bytes(loaded));
         test_basic_operations(loaded, keys, others);
     }
@@ -146,6 +150,10 @@ void test_io(const trie_type& trie, const std::vector<std::string>& keys, const 
         REQUIRE_EQ(trie.num_keys(), mapped.num_keys());
         REQUIRE_EQ(trie.alphabet_size(), mapped.alphabet_size());
         REQUIRE_EQ(trie.max_length(), mapped.max_length());
+        REQUIRE_EQ(trie.num_nodes(), mapped.num_nodes());
+        REQUIRE_EQ(trie.num_units(), mapped.num_units());
+        REQUIRE_EQ(trie.num_free_units(), mapped.num_free_units());
+        REQUIRE_EQ(trie.tail_length(), mapped.tail_length());
         REQUIRE_EQ(memory, xcdat::memory_in_bytes(mapped));
         test_basic_operations(mapped, keys, others);
     }

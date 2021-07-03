@@ -12,10 +12,16 @@
 
 namespace xcdat {
 
+//! The trie type with standard DACs using 8-bit integers
 using trie_8_type = trie<bc_vector_8>;
+
+//! The trie type with standard DACs using 16-bit integers
 using trie_16_type = trie<bc_vector_16>;
 
+//! The trie type with pointer-based DACs using 7-bit integers (for the 1st layer)
 using trie_7_type = trie<bc_vector_7>;
+
+//! The trie type with pointer-based DACs using 15-bit integers (for the 1st layer)
 using trie_15_type = trie<bc_vector_15>;
 
 //! Set the continuous memory block to a new trie instance (for a memory-mapped file).
