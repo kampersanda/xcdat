@@ -17,8 +17,8 @@ class trie {
     using trie_type = trie<BcVector>;
     using bc_vector_type = BcVector;
 
-    //! The identifier of BC vector.
-    static constexpr auto l1_bits = bc_vector_type::l1_bits;
+    //! The type identifier.
+    static constexpr std::uint32_t type_id = bc_vector_type::l1_bits;
 
   private:
     std::uint64_t m_num_keys = 0;

@@ -34,7 +34,7 @@ template <class Trie>
 
     std::uint32_t type_id;
     visitor.visit(type_id);
-    XCDAT_THROW_IF(type_id != Trie::l1_bits, "The input dictionary type is different.");
+    XCDAT_THROW_IF(type_id != Trie::type_id, "The input dictionary type is different.");
 
     Trie idx;
     visitor.visit(idx);
@@ -48,7 +48,7 @@ template <class Trie>
 
     std::uint32_t type_id;
     visitor.visit(type_id);
-    XCDAT_THROW_IF(type_id != Trie::l1_bits, "The input dictionary type is different.");
+    XCDAT_THROW_IF(type_id != Trie::type_id, "The input dictionary type is different.");
 
     Trie idx;
     visitor.visit(idx);
@@ -60,7 +60,7 @@ template <class Trie>
 template <class Trie>
 [[maybe_unused]] std::uint64_t save(const Trie& idx, const std::string& filepath) {
     save_visitor visitor(filepath);
-    visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // identifier
+    visitor.visit(static_cast<std::uint32_t>(Trie::type_id));  // identifier
     visitor.visit(const_cast<Trie&>(idx));
     return visitor.bytes();
 }
@@ -69,20 +69,20 @@ template <class Trie>
 template <class Trie>
 [[maybe_unused]] std::uint64_t memory_in_bytes(const Trie& idx) {
     size_visitor visitor;
-    visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // identifier
+    visitor.visit(static_cast<std::uint32_t>(Trie::type_id));  // identifier
     visitor.visit(const_cast<Trie&>(idx));
     return visitor.bytes();
 }
 
 //! Get the identifier of the trie type embedded by the function 'save'.
-//! The identifier corresponds to trie::l1_bits and will be used to detect the trie type.
+//! The identifier corresponds to trie::type_id and will be used to detect the trie type.
 [[maybe_unused]] std::uint32_t get_type_id(const std::string& filepath) {
     std::ifstream ifs(filepath);
     XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
 
-    std::uint32_t flag;
-    ifs.read(reinterpret_cast<char*>(&flag), sizeof(flag));
-    return flag;
+    std::uint32_t type_id;
+    ifs.read(reinterpret_cast<char*>(&type_id), sizeof(type_id));
+    return type_id;
 }
 
 }  // namespace xcdat
