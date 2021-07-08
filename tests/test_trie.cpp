@@ -51,75 +51,51 @@ void test_basic_operations(const trie_type& trie, const std::vector<std::string>
 }
 
 void test_prefix_search(const trie_type& trie, const std::vector<std::string>& keys,
-                        const std::vector<std::string>& others) {
-    for (auto& key : keys) {
-        size_t num_results = 0;
-        auto itr = trie.make_prefix_iterator(key);
-
-        while (itr.next()) {
+                        const std::vector<std::string>& queries) {
+    for (auto& query : queries) {
+        std::vector<std::string> results;
+        for (auto itr = trie.make_prefix_iterator(query); itr.next();) {
             const auto id = itr.id();
             const auto decoded = itr.decoded_view();
 
-            REQUIRE_LE(decoded.size(), key.size());
+            REQUIRE_LE(decoded.size(), query.size());
             REQUIRE_EQ(id, trie.lookup(decoded));
             REQUIRE_EQ(decoded, trie.decode(id));
 
-            num_results += 1;
+            results.push_back(itr.decoded());
         }
 
-        REQUIRE_LE(1, num_results);
-        REQUIRE_LE(num_results, key.size());
-    }
+        auto naive_results = xcdat::test::prefix_search_naive(keys, query);
+        REQUIRE_EQ(results.size(), naive_results.size());
 
-    for (auto& key : others) {
-        size_t num_results = 0;
-        auto itr = trie.make_prefix_iterator(key);
-
-        while (itr.next()) {
-            const auto id = itr.id();
-            const auto decoded = itr.decoded_view();
-
-            REQUIRE_LT(decoded.size(), key.size());
-            REQUIRE_EQ(id, trie.lookup(decoded));
-            REQUIRE_EQ(decoded, trie.decode(id));
-
-            num_results += 1;
+        for (std::size_t i = 0; i < results.size(); i++) {
+            REQUIRE_EQ(results[i], naive_results[i]);
         }
-
-        REQUIRE_LT(num_results, key.size());
     }
 }
 
 void test_predictive_search(const trie_type& trie, const std::vector<std::string>& keys,
-                            const std::vector<std::string>& others) {
-    for (auto& key : keys) {
-        size_t num_results = 0;
-        auto itr = trie.make_predictive_iterator(key);
+                            const std::vector<std::string>& queries) {
+    for (auto& query : queries) {
+        std::string_view query_view{query.c_str(), query.size() / 3 + 1};
 
-        while (itr.next()) {
+        std::vector<std::string> results;
+        for (auto itr = trie.make_predictive_iterator(query_view); itr.next();) {
             const auto id = itr.id();
             const auto decoded = itr.decoded_view();
 
-            REQUIRE_LE(key.size(), decoded.size());
+            REQUIRE_LE(query_view.size(), decoded.size());
             REQUIRE_EQ(id, trie.lookup(decoded));
             REQUIRE_EQ(decoded, trie.decode(id));
 
-            num_results += 1;
+            results.push_back(itr.decoded());
         }
 
-        REQUIRE_LE(1, num_results);
-    }
+        auto naive_results = xcdat::test::predictive_search_naive(keys, query_view);
+        REQUIRE_EQ(results.size(), naive_results.size());
 
-    for (auto& key : others) {
-        auto itr = trie.make_predictive_iterator(key);
-
-        while (itr.next()) {
-            const auto id = itr.id();
-            const auto decoded = itr.decoded_view();
-
-            REQUIRE_LT(key.size(), decoded.size());
-            REQUIRE_EQ(id, trie.lookup(decoded));
-            REQUIRE_EQ(decoded, trie.decode(id));
+        for (std::size_t i = 0; i < results.size(); i++) {
+            REQUIRE_EQ(results[i], naive_results[i]);
         }
     }
 }
@@ -222,13 +198,14 @@ TEST_CASE("Test trie_type (tiny)") {
 TEST_CASE("Test trie_type (real)") {
     auto keys = xcdat::test::to_unique_vec(load_strings("keys.txt"));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 100);
 
     trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }
@@ -236,13 +213,14 @@ TEST_CASE("Test trie_type (real)") {
 TEST_CASE("Test trie_type (random 10K, A--B)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, 'A', 'B'));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 100);
 
     trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }
@@ -250,13 +228,14 @@ TEST_CASE("Test trie_type (random 10K, A--B)") {
 TEST_CASE("Test trie_type (random 10K, A--Z)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, 'A', 'Z'));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 100);
 
     trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }
@@ -264,13 +243,14 @@ TEST_CASE("Test trie_type (random 10K, A--Z)") {
 TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, INT8_MIN, INT8_MAX));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 100);
 
     trie_type trie(keys);
     REQUIRE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }
@@ -279,13 +259,14 @@ TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
 TEST_CASE("Test trie_type (random 100K, A--B)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, 'A', 'B'));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 1000);
 
     trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }
@@ -293,13 +274,14 @@ TEST_CASE("Test trie_type (random 100K, A--B)") {
 TEST_CASE("Test trie_type (random 100K, A--Z)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, 'A', 'Z'));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 1000);
 
     trie_type trie(keys);
     REQUIRE_FALSE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }
@@ -307,13 +289,14 @@ TEST_CASE("Test trie_type (random 100K, A--Z)") {
 TEST_CASE("Test trie_type (random 100K, 0x00--0xFF)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, INT8_MIN, INT8_MAX));
     auto others = xcdat::test::extract_keys(keys);
+    auto queries = xcdat::test::sample_keys(keys, 1000);
 
     trie_type trie(keys);
     REQUIRE(trie.bin_mode());
 
     test_basic_operations(trie, keys, others);
-    test_prefix_search(trie, keys, others);
-    test_predictive_search(trie, keys, others);
+    test_prefix_search(trie, keys, queries);
+    test_predictive_search(trie, keys, queries);
     test_enumerate(trie, keys);
     test_io(trie, keys, others);
 }

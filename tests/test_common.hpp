@@ -81,4 +81,42 @@ std::vector<std::string> extract_keys(std::vector<std::string>& keys, double rat
     return keys2;
 }
 
+std::vector<std::string> sample_keys(const std::vector<std::string>& keys, std::uint64_t num_samples,
+                                     std::uint64_t seed = 17) {
+    std::mt19937_64 engine(seed);
+    std::uniform_int_distribution<std::uint64_t> dist(0, keys.size() - 1);
+
+    std::vector<std::string> samples(num_samples);
+    for (std::uint64_t i = 0; i < num_samples; ++i) {
+        samples[i] = keys[dist(engine)];
+    }
+    return samples;
+}
+
+std::vector<std::string> prefix_search_naive(const std::vector<std::string>& keys, std::string_view query) {
+    std::vector<std::string> results;
+    for (const auto& key : keys) {
+        if (query.size() < key.size()) {
+            continue;
+        }
+        if (std::equal(key.begin(), key.end(), query.begin())) {
+            results.push_back(key);
+        }
+    }
+    return results;
+}
+
+std::vector<std::string> predictive_search_naive(const std::vector<std::string>& keys, std::string_view query) {
+    std::vector<std::string> results;
+    for (const auto& key : keys) {
+        if (key.size() < query.size()) {
+            continue;
+        }
+        if (std::equal(query.begin(), query.end(), key.begin())) {
+            results.push_back(key);
+        }
+    }
+    return results;
+}
+
 }  // namespace xcdat::test
