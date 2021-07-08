@@ -12,13 +12,24 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     return p;
 }
 
+std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n') {
+    std::ifstream ifs(filepath);
+    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
+
+    std::vector<std::string> strs;
+    for (std::string str; std::getline(ifs, str, delim);) {
+        strs.push_back(str);
+    }
+    return strs;
+}
+
 template <class Trie>
 int build(const cmd_line_parser::parser& p) {
     const auto input_keys = p.get<std::string>("input_keys");
     const auto output_dic = p.get<std::string>("output_dic");
     const auto binary_mode = p.get<bool>("binary_mode", false);
 
-    auto keys = xcdat::load_strings(input_keys);
+    auto keys = load_strings(input_keys);
     if (keys.empty()) {
         tfm::errorfln("Error: The input dataset is empty.");
     }

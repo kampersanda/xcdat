@@ -10,15 +10,15 @@ int main() {
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
     };
 
-    // The input keys must be sorted and unique (although they have already satisfied in this case).
+    // The input keys must be sorted and unique (already satisfied in this case).
     std::sort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
 
-    // The trie dictionary type
-    using trie_type = xcdat::trie_7_type;
-    // using trie_type = xcdat::trie_8_type;
-    // using trie_type = xcdat::trie_15_type;
+    // The trie dictionary type from the four types
+    using trie_type = xcdat::trie_8_type;
     // using trie_type = xcdat::trie_16_type;
+    // using trie_type = xcdat::trie_7_type;
+    // using trie_type = xcdat::trie_15_type;
 
     // The dictionary filename
     const char* tmp_filename = "dic.bin";
@@ -34,6 +34,9 @@ int main() {
 
     // Load the trie dictionary on memory.
     const auto trie = xcdat::load<trie_type>(tmp_filename);
+
+    // Or, you can set the continuous memory block via a memory-mapped file.
+    // const auto trie = xcdat::mmap<trie_type>(mapped_data);
 
     // Basic statistics
     std::cout << "Number of keys: " << trie.num_keys() << std::endl;
@@ -77,7 +80,7 @@ int main() {
         std::cout << "}" << std::endl;
     }
 
-    // Enumerate all the keys (in lex order).
+    // Enumerate all the keys (in lexicographical order).
     {
         std::cout << "Enumerate() = {" << std::endl;
         auto itr = trie.make_enumerative_iterator();

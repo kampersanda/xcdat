@@ -17,6 +17,17 @@ cmd_line_parser::parser make_parser(int argc, char** argv) {
     return p;
 }
 
+std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n') {
+    std::ifstream ifs(filepath);
+    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
+
+    std::vector<std::string> strs;
+    for (std::string str; std::getline(ifs, str, delim);) {
+        strs.push_back(str);
+    }
+    return strs;
+}
+
 std::vector<std::string_view> sample_keys(const std::vector<std::string>& keys, std::uint64_t num_samples,
                                           std::uint64_t random_seed) {
     std::mt19937_64 engine(random_seed);
@@ -127,7 +138,7 @@ int main(int argc, char** argv) {
     const auto random_seed = p.get<std::uint64_t>("random_seed", 13);
     const auto binary_mode = p.get<bool>("binary_mode", false);
 
-    auto keys = xcdat::load_strings(input_keys);
+    auto keys = load_strings(input_keys);
     if (keys.empty()) {
         tfm::errorfln("Error: The input dataset is empty.");
         return 1;

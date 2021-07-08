@@ -50,9 +50,9 @@ int main(int argc, char** argv) {
     }
 
     const auto input_dic = p.get<std::string>("input_dic");
-    const auto flag = xcdat::get_flag(input_dic);
+    const auto type_id = xcdat::get_type_id(input_dic);
 
-    switch (flag) {
+    switch (type_id) {
         case 7:
             return prefix_search<xcdat::trie_7_type>(p);
         case 8:

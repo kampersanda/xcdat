@@ -17,6 +17,7 @@ class trie {
     using trie_type = trie<BcVector>;
     using bc_vector_type = BcVector;
 
+    //! The identifier of BC vector.
     static constexpr auto l1_bits = bc_vector_type::l1_bits;
 
   private:
@@ -59,7 +60,7 @@ class trie {
     //!  - end() returns the iterator to the end.
     //! The type 'Strings::value_type::value_type' should be one-byte integer type such as 'char'.
     template <class Strings>
-    trie(const Strings& keys, bool bin_mode = false) : trie(trie_builder(keys, l1_bits, bin_mode)) {
+    trie(const Strings& keys, bool bin_mode = false) : trie(trie_builder(keys, bc_vector_type::l1_bits, bin_mode)) {
         static_assert(sizeof(char) == sizeof(typename Strings::value_type::value_type));
     }
 

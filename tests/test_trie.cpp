@@ -20,6 +20,17 @@ using trie_type = xcdat::trie_15_type;
 using trie_type = xcdat::trie_16_type;
 #endif
 
+std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n') {
+    std::ifstream ifs(filepath);
+    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
+
+    std::vector<std::string> strs;
+    for (std::string str; std::getline(ifs, str, delim);) {
+        strs.push_back(str);
+    }
+    return strs;
+}
+
 void test_basic_operations(const trie_type& trie, const std::vector<std::string>& keys,
                            const std::vector<std::string>& others) {
     REQUIRE_EQ(trie.num_keys(), keys.size());
@@ -209,7 +220,7 @@ TEST_CASE("Test trie_type (tiny)") {
 }
 
 TEST_CASE("Test trie_type (real)") {
-    auto keys = xcdat::test::to_unique_vec(xcdat::load_strings("keys.txt"));
+    auto keys = xcdat::test::to_unique_vec(load_strings("keys.txt"));
     auto others = xcdat::test::extract_keys(keys);
 
     trie_type trie(keys);

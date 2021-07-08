@@ -32,9 +32,9 @@ template <class Trie>
 [[maybe_unused]] Trie mmap(const char* address) {
     mmap_visitor visitor(address);
 
-    std::uint32_t flag;
-    visitor.visit(flag);
-    XCDAT_THROW_IF(flag != Trie::l1_bits, "The input dictionary type is different.");
+    std::uint32_t type_id;
+    visitor.visit(type_id);
+    XCDAT_THROW_IF(type_id != Trie::l1_bits, "The input dictionary type is different.");
 
     Trie idx;
     visitor.visit(idx);
@@ -46,9 +46,9 @@ template <class Trie>
 [[maybe_unused]] Trie load(const std::string& filepath) {
     load_visitor visitor(filepath);
 
-    std::uint32_t flag;
-    visitor.visit(flag);
-    XCDAT_THROW_IF(flag != Trie::l1_bits, "The input dictionary type is different.");
+    std::uint32_t type_id;
+    visitor.visit(type_id);
+    XCDAT_THROW_IF(type_id != Trie::l1_bits, "The input dictionary type is different.");
 
     Trie idx;
     visitor.visit(idx);
@@ -56,10 +56,11 @@ template <class Trie>
 }
 
 //! Save the trie dictionary to the file and returns the file size in bytes.
+//! The identifier of the trie type will be written in the first 4 bytes.
 template <class Trie>
 [[maybe_unused]] std::uint64_t save(const Trie& idx, const std::string& filepath) {
     save_visitor visitor(filepath);
-    visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // flag
+    visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // identifier
     visitor.visit(const_cast<Trie&>(idx));
     return visitor.bytes();
 }
@@ -68,32 +69,20 @@ template <class Trie>
 template <class Trie>
 [[maybe_unused]] std::uint64_t memory_in_bytes(const Trie& idx) {
     size_visitor visitor;
-    visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // flag
+    visitor.visit(static_cast<std::uint32_t>(Trie::l1_bits));  // identifier
     visitor.visit(const_cast<Trie&>(idx));
     return visitor.bytes();
 }
 
-//! Get the flag indicating the trie dictionary type, embedded by the function 'save'.
-//! The flag corresponds to trie::l1_bits and will be used to detect the trie type from the file.
-[[maybe_unused]] std::uint32_t get_flag(const std::string& filepath) {
+//! Get the identifier of the trie type embedded by the function 'save'.
+//! The identifier corresponds to trie::l1_bits and will be used to detect the trie type.
+[[maybe_unused]] std::uint32_t get_type_id(const std::string& filepath) {
     std::ifstream ifs(filepath);
     XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
 
     std::uint32_t flag;
     ifs.read(reinterpret_cast<char*>(&flag), sizeof(flag));
     return flag;
-}
-
-//! Load the keywords from the file.
-[[maybe_unused]] std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n') {
-    std::ifstream ifs(filepath);
-    XCDAT_THROW_IF(!ifs.good(), "Cannot open the input file");
-
-    std::vector<std::string> strs;
-    for (std::string str; std::getline(ifs, str, delim);) {
-        strs.push_back(str);
-    }
-    return strs;
 }
 
 }  // namespace xcdat
