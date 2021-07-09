@@ -556,7 +556,7 @@ We compared the performance of Xcdat with those of other selected dictionary lib
 
 ### Approach
 
-We constructed a dictionary from a dataset and measured the elapsed time. The dynamic dictionaries, Cedar and Tessil's containers, were constructed by inserting sorted keywords. Each keyword is associated with a unique ID of a 4-byte integer. Since all the libraries support serialization of the data structure, we measured the file size as the memory usage.
+We constructed a dictionary from a dataset and measured the elapsed time. The dynamic dictionaries, Cedar and Tessil's containers, were constructed by inserting sorted keywords. Each keyword is associated with a unique ID of a 4-byte integer. Since all the libraries support serialization of the data structure, we measured the output file size as the memory usage.
 
 The time to lookup IDs from keywords was measured for 1,000 query keywords randomly sampled from each the dataset. Also, for some libraries supporting to decode keywords from IDs, the time was measured for the 1,000 IDs corresponding to the query keywords. We took the best result of 10 runs.
 
