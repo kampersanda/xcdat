@@ -217,9 +217,9 @@ class trie_builder {
 
         // following the children
         auto i = beg;
-        auto ch = static_cast<uint8_t>(m_keys[beg][kpos]);
+        auto ch = static_cast<std::uint8_t>(m_keys[beg][kpos]);
         for (auto j = beg + 1; j < end; ++j) {
-            const auto next_ch = static_cast<uint8_t>(m_keys[j][kpos]);
+            const auto next_ch = static_cast<std::uint8_t>(m_keys[j][kpos]);
             if (ch != next_ch) {
                 arrange(i, j, kpos + 1, base ^ m_table.get_code(ch));
                 ch = next_ch;
