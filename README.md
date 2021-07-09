@@ -568,6 +568,10 @@ The code of the benchmark can be found [here](https://github.com/kampersanda/fas
 
 ![lookup_vs_memory](https://github.com/kampersanda/xcdat/blob/master/image/lookup_vs_memory.png?raw=true)
 
+#### Plots: memory vs. build
+
+![build_vs_memory](https://github.com/kampersanda/xcdat/blob/master/image/build_vs_memory.png?raw=true)
+
 #### Table: IPA
 
 | Library     | Data structure                            | Memory (MiB) | Build (ns/key) | Lookup (ns/key) | Decode (ns/id) |
