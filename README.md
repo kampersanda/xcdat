@@ -564,11 +564,11 @@ The code of the benchmark can be found [here](https://github.com/kampersanda/fas
 
 ### Results
 
-#### Plots: memory vs. lookup
+#### Plot: memory usage vs. lookup time
 
 ![lookup_vs_memory](https://github.com/kampersanda/xcdat/blob/master/image/lookup_vs_memory.png?raw=true)
 
-#### Plots: memory vs. build
+#### Plot: memory usage vs. build time
 
 ![build_vs_memory](https://github.com/kampersanda/xcdat/blob/master/image/build_vs_memory.png?raw=true)
 
