@@ -27,6 +27,7 @@
 - **Binary key support.** In normal mode, Xcdat will use the `\0` character as an end marker for each keyword. However, if the dataset include `\0` characters, it will use bit flags instead of end markers, allowing the dataset to consist of binary keywords.
 - **Memory mapping.** Xcdat supports *memory mapping*, allowing data to be deserialized quickly without loading it into memory. Of course, deserialization by the loading is also supported.
 - **Header only.** The library consists only of header files, and you can easily install it.
+- **Python binding.** You can use Xcdat in Python3 via [pybind11](https://github.com/pybind/pybind11). (visit the directory [pybind](https://github.com/kampersanda/xcdat/tree/master/pybind))
 
 ## Build instructions
 
