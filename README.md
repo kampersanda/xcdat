@@ -18,7 +18,7 @@
 
 ## Features
 
-- **Compressed string dictionary.** Xcdat implements a (static) *compressed string dictioanry* that stores a set of strings (or keywords) in a compressed space while supporting several search operations [1,2]. For example, Xcdat can store an entire set of English Wikipedia titles at half the size of the raw data. (see [Performance](#performance))
+- **Compressed string dictionary.** Xcdat implements a (static) *compressed string dictioanry* that stores a set of strings (or keywords) in a compressed space while supporting several search operations [1,2]. For example, Xcdat can store an entire set of English Wikipedia titles at half the size of the raw data. (See [Performance](#performance))
 - **Fast and compact data structure.** Xcdat employs the *double-array trie* [3] known as the fastest trie implementation. However, the double-array trie resorts to many pointers and consumes a large amount of memory. To address this, Xcdat applies the *XCDA* method [2] that represents the double-array trie in a compressed format while maintaining the fast searches.
 - **Cache efficiency.** Xcdat employs a *minimal-prefix trie* [4] that replaces redundant trie nodes into strings to reduce random access and to improve locality of references.
 - **Dictionary encoding.** Xcdat maps `N` distinct keywords into unique IDs from `[0,N-1]`, and supports the two symmetric operations: `lookup` returns the ID corresponding to a given keyword; `decode` returns the keyword associated with a given ID. The mapping is so-called *dictionary encoding* (or *domain encoding*) and is fundamental in many DB applications as described by Martínez-Prieto et al [1] or Müller et al. [5].
@@ -27,7 +27,7 @@
 - **Binary key support.** In normal mode, Xcdat will use the `\0` character as an end marker for each keyword. However, if the dataset include `\0` characters, it will use bit flags instead of end markers, allowing the dataset to consist of binary keywords.
 - **Memory mapping.** Xcdat supports *memory mapping*, allowing data to be deserialized quickly without loading it into memory. Of course, deserialization by the loading is also supported.
 - **Header only.** The library consists only of header files, and you can easily install it.
-- **Python binding.** You can use Xcdat in Python3 via [pybind11](https://github.com/pybind/pybind11). (visit the directory [pybind](https://github.com/kampersanda/xcdat/tree/master/pybind))
+- **Python binding.** You can use Xcdat in Python3 via [pybind11](https://github.com/pybind/pybind11). (Visit the directory [pybind](https://github.com/kampersanda/xcdat/tree/master/pybind))
 
 ## Build instructions
 
@@ -50,6 +50,10 @@ Or, since this library consists only of header files, you can easily install it 
 You need to install a modern C++17 ready compiler such as `g++ >= 7.0` or `clang >= 4.0`. For the build system, you need to install `CMake >= 3.0` to compile the library.
 
 The library considers a 64-bit operating system. The code has been tested only on Mac OS X and Linux. That is, this library considers only UNIX-compatible OS.
+
+### Python binding
+
+Xcdat supports the Python binding via [pybind11](https://github.com/pybind/pybind11). The description can be found in the directory [pybind](https://github.com/kampersanda/xcdat/tree/master/pybind).
 
 ## Command line tools
 
