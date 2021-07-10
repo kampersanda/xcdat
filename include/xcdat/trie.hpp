@@ -166,7 +166,7 @@ class trie {
     class prefix_iterator {
       private:
         const trie_type* m_obj = nullptr;
-        std::string_view m_key;
+        std::string m_key;
         std::uint64_t m_id = 0;
         std::uint64_t m_kpos = 0;
         std::uint64_t m_npos = 0;
@@ -231,7 +231,7 @@ class trie {
 
       private:
         const trie_type* m_obj = nullptr;
-        std::string_view m_key;
+        std::string m_key;
         std::uint64_t m_id = 0;
         std::string m_decoded;
         std::vector<cursor_type> m_stack;
