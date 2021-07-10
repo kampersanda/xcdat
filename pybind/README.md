@@ -1,3 +1,18 @@
+# Python binding of Xcdat
+
+The Python3 binding of Xcdat is implemented through [pybind11](https://github.com/pybind/pybind11).
+
+After installing Xcdat and pybind11, you can install the Python module `xcdat` with the following command.
+
+```sh
+$ python -m pip install .
+```
+
+## Sample usage
+
+`sample.py` provides a sample usage.
+
+```python
 #!/usr/bin/env python3
 
 import xcdat
@@ -73,3 +88,5 @@ assert trie.num_units() == other.num_units()
 assert trie.memory_in_bytes() == other.memory_in_bytes()
 
 os.remove('dic.bin')
+```
+
