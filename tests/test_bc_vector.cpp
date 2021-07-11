@@ -12,12 +12,16 @@
 
 #ifdef BC_VECTOR_7
 using bc_vector_type = xcdat::bc_vector_7;
+#define BC_NAME "xcdat::bc_vector_7"
 #elif BC_VECTOR_8
 using bc_vector_type = xcdat::bc_vector_8;
+#define BC_NAME "xcdat::bc_vector_8"
 #elif BC_VECTOR_15
 using bc_vector_type = xcdat::bc_vector_15;
+#define BC_NAME "xcdat::bc_vector_15"
 #elif BC_VECTOR_16
 using bc_vector_type = xcdat::bc_vector_16;
+#define BC_NAME "xcdat::bc_vector_16"
 #endif
 
 struct bc_unit {
@@ -66,14 +70,14 @@ void test_bc_vector(const std::vector<bc_unit>& bc_units, const std::vector<bool
     }
 }
 
-TEST_CASE("Test bc_vector 10K in [0,10K)") {
+TEST_CASE("Test " BC_NAME " 10K in [0,10K)") {
     const std::uint64_t size = 10000;
     auto bc_units = make_random_units(size, size - 1);
     auto leaves = xcdat::test::make_random_bits(size, 0.2);
     test_bc_vector(bc_units, leaves);
 }
 
-TEST_CASE("Test bc_vector 10K in [0,UINT64_MAX)") {
+TEST_CASE("Test " BC_NAME " 10K in [0,UINT64_MAX)") {
     const std::uint64_t size = 10000;
     auto bc_units = make_random_units(size, UINT64_MAX);
     auto leaves = xcdat::test::make_random_bits(size, 0.2);

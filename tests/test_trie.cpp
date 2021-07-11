@@ -12,12 +12,16 @@
 
 #ifdef TRIE_7
 using trie_type = xcdat::trie_7_type;
+#define TRIE_NAME "xcdat::trie_7_type"
 #elif TRIE_8
 using trie_type = xcdat::trie_8_type;
+#define TRIE_NAME "xcdat::trie_8_type"
 #elif TRIE_15
 using trie_type = xcdat::trie_15_type;
+#define TRIE_NAME "xcdat::trie_15_type"
 #elif TRIE_16
 using trie_type = xcdat::trie_16_type;
+#define TRIE_NAME "xcdat::trie_16_type"
 #endif
 
 std::vector<std::string> load_strings(const std::string& filepath, char delim = '\n') {
@@ -148,7 +152,7 @@ void test_io(const trie_type& trie, const std::vector<std::string>& keys, const 
     std::remove(tmp_filepath);
 }
 
-TEST_CASE("Test trie_type (tiny)") {
+TEST_CASE("Test " TRIE_NAME " (tiny)") {
     std::vector<std::string> keys = {
         "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Air", "MacBook_Pro",
         "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
@@ -195,7 +199,27 @@ TEST_CASE("Test trie_type (tiny)") {
     test_io(trie, keys, others);
 }
 
-TEST_CASE("Test trie_type (real)") {
+TEST_CASE("Test " TRIE_NAME " (unsort)") {
+    std::vector<std::string> keys = {
+        "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook_Pro", "MacBook_Air",
+        "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",      "iPhone_SE",
+    };
+
+    auto func = [&]() { auto trie = trie_type(keys); };
+    REQUIRE_THROWS_AS(func(), const xcdat::exception&);
+}
+
+TEST_CASE("Test " TRIE_NAME " (not unique)") {
+    std::vector<std::string> keys = {
+        "AirPods",  "AirTag",  "Mac",  "MacBook", "MacBook", "MacBook_Pro",
+        "Mac_Mini", "Mac_Pro", "iMac", "iPad",    "iPhone",  "iPhone_SE",
+    };
+
+    auto func = [&]() { auto trie = trie_type(keys); };
+    REQUIRE_THROWS_AS(func(), const xcdat::exception&);
+}
+
+TEST_CASE("Test " TRIE_NAME " (real)") {
     auto keys = xcdat::test::to_unique_vec(load_strings("keys.txt"));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 100);
@@ -210,7 +234,7 @@ TEST_CASE("Test trie_type (real)") {
     test_io(trie, keys, others);
 }
 
-TEST_CASE("Test trie_type (random 10K, A--B)") {
+TEST_CASE("Test " TRIE_NAME " (random 10K, A--B)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, 'A', 'B'));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 100);
@@ -225,7 +249,7 @@ TEST_CASE("Test trie_type (random 10K, A--B)") {
     test_io(trie, keys, others);
 }
 
-TEST_CASE("Test trie_type (random 10K, A--Z)") {
+TEST_CASE("Test " TRIE_NAME " (random 10K, A--Z)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, 'A', 'Z'));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 100);
@@ -240,7 +264,7 @@ TEST_CASE("Test trie_type (random 10K, A--Z)") {
     test_io(trie, keys, others);
 }
 
-TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
+TEST_CASE("Test " TRIE_NAME " (random 10K, 0x00--0xFF)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(10000, 1, 30, INT8_MIN, INT8_MAX));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 100);
@@ -256,7 +280,7 @@ TEST_CASE("Test trie_type (random 10K, 0x00--0xFF)") {
 }
 
 #ifdef NDEBUG
-TEST_CASE("Test trie_type (random 100K, A--B)") {
+TEST_CASE("Test " TRIE_NAME " (random 100K, A--B)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, 'A', 'B'));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 1000);
@@ -271,7 +295,7 @@ TEST_CASE("Test trie_type (random 100K, A--B)") {
     test_io(trie, keys, others);
 }
 
-TEST_CASE("Test trie_type (random 100K, A--Z)") {
+TEST_CASE("Test " TRIE_NAME " (random 100K, A--Z)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, 'A', 'Z'));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 1000);
@@ -286,7 +310,7 @@ TEST_CASE("Test trie_type (random 100K, A--Z)") {
     test_io(trie, keys, others);
 }
 
-TEST_CASE("Test trie_type (random 100K, 0x00--0xFF)") {
+TEST_CASE("Test " TRIE_NAME " (random 100K, 0x00--0xFF)") {
     auto keys = xcdat::test::to_unique_vec(xcdat::test::make_random_keys(100000, 1, 30, INT8_MIN, INT8_MAX));
     auto others = xcdat::test::extract_keys(keys);
     auto queries = xcdat::test::sample_keys(keys, 1000);
