@@ -542,18 +542,18 @@ We compared the performance of Xcdat with those of other selected dictionary lib
   - [xcdat<15>](https://github.com/kampersanda/xcdat/blob/master/include/xcdat.hpp): `xcdat::trie_15_type`
 - Other double-array tries
   - [darts](http://chasen.org/~taku/software/darts/): Double-array trie [3].
-  - [darts-clone](https://github.com/s-yata/darts-clone): Compact double-array trie [10].
-  - [cedar](http://www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/): Dynamic double-array reduced trie [11,12]
-  - [cedarpp](http://www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/): Dynamic double-array prefix trie [11,12]
-  - [dastrie](http://www.chokkan.org/software/dastrie/): Compact double-array prefix trie [10]
+  - [darts-clone](https://github.com/s-yata/darts-clone): Compact double-array trie [4].
+  - [cedar](http://www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/): Dynamic double-array reduced trie [10,11]
+  - [cedarpp](http://www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/): Dynamic double-array prefix trie [10,11]
+  - [dastrie](http://www.chokkan.org/software/dastrie/): Compact double-array prefix trie [4]
 - Succinct tries
-  - [tx](https://github.com/hillbig/tx-trie): LOUDS trie [13]
-  - [marisa](https://github.com/s-yata/marisa-trie): LOUDS nested patricia trie [14]
-  - [fst](https://github.com/kampersanda/fast_succinct_trie): Fast succinct prefix trie [15]
-  - [pdt](https://github.com/ot/path_decomposed_tries): Centroid path-decomposed trie with RePair [16]
+  - [tx](https://github.com/hillbig/tx-trie): LOUDS trie [12]
+  - [marisa](https://github.com/s-yata/marisa-trie): LOUDS nested patricia trie [13]
+  - [fst](https://github.com/kampersanda/fast_succinct_trie): Fast succinct prefix trie [14]
+  - [pdt](https://github.com/ot/path_decomposed_tries): Centroid path-decomposed trie with RePair [15]
 - Tessil's string containers
-  - [hat-trie](https://github.com/Tessil/hat-trie/): HAT-trie [17]
-  - [array-hash](https://github.com/Tessil/array-hash): Array hashing [18]
+  - [hat-trie](https://github.com/Tessil/hat-trie/): HAT-trie [16]
+  - [array-hash](https://github.com/Tessil/array-hash): Array hashing [17]
 
 ### Environments
 
@@ -707,8 +707,7 @@ If you use the library in academic settings, please cite the following paper.
 7. R. Baeza-Yates, and B. Ribeiro-Neto. **Modern Information Retrieval.** 2nd ed. Addison Wesley, Boston, MA, USA, 2011.
 8. T. Kudo, T. Hanaoka, J. Mukai, Y. Tabata, and H. Komatsu. **Efficient dictionary and language model compression for input method editors.** In *Proc. WTIM*, pp. 19–25, 2011.
 9. N. R. Brisaboa, S. Ladra, and G. Navarro. **DACs: Bringing direct access to variable-length codes.** *Information Processing & Management*, 49(1): 392–404, 2013.
-10. S. Yata, M. Oono, K. Morita, M. Fuketa, T. Sumitomo, and J. Aoe. **A compact static double-array keeping character codes.** *Information processing & management*, 43(1): 237-247, 2007.
-11. S. Yata, M. Tamura, K. Morita, M. Fuketa and J. Aoe. **Sequential insertions and performance evaluations for double-arrays.** In *Proc. IPSJ*, pp. 1263–1264, 2009.
+10. S. Yata, M. Tamura, K. Morita, M. Fuketa and J. Aoe. **Sequential insertions and performance evaluations for double-arrays.** In *Proc. IPSJ*, pp. 1263–1264, 2009.
 12. N. Yoshinaga, and M. Kitsuregawa. **A self-adaptive classifier for efficient text-stream processing.** In *Proc. COLING*, pp. 1091–1102, 2014.
 13. G. Jacobson. **Space-efficient static trees and graphs.** In *Proc. FOCS*, pp. 549–554, 1989.
 14. S. Yata. **Dictionary compression by nesting prefix/patricia tries.** In *Proc. JNLP*, pp. 576–578, 2011.
