@@ -517,6 +517,18 @@ std::uint64_t memory_in_bytes(const Trie& idx);
 std::uint32_t get_type_id(const std::string& filepath);
 ```
 
+### Exception class
+
+If an error occurs in a construction or I/O operation, Xcdat will throw an instance of  `xcdat::exception` as a runtime error.
+
+```c++
+class exception : public std::exception {
+  public:
+    //! Get the error massage.
+    const char* what() const throw() override;
+};
+```
+
 ## Performance
 
 We compared the performance of Xcdat with those of other selected dictionary libraries written in C++.
@@ -565,7 +577,7 @@ We compared the performance of Xcdat with those of other selected dictionary lib
 
 We constructed a dictionary from a dataset and measured the elapsed time. The dynamic dictionaries, Cedar and Tessil's containers, were constructed by inserting sorted keywords. Each keyword is associated with a unique ID of a 4-byte integer. Since all the libraries support serialization of the data structure, we measured the output file size as the memory usage.
 
-The time to lookup IDs from keywords was measured for 1,000 query keywords randomly sampled from each the dataset. Also, for some libraries supporting to decode keywords from IDs, the time was measured for the 1,000 IDs corresponding to the query keywords. We took the best result of 10 runs.
+The time to lookup IDs from keywords was measured for 1,000 query keywords randomly sampled from each dataset. Also, for some libraries supporting to decode keywords from IDs, the time was measured for the 1,000 IDs corresponding to the query keywords. We took the best result of 10 runs.
 
 The code of the benchmark can be found [here](https://github.com/kampersanda/fast_succinct_trie/tree/master/bench).
 
