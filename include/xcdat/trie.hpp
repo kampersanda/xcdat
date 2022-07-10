@@ -166,7 +166,7 @@ class trie {
     class prefix_iterator {
       private:
         const trie_type* m_obj = nullptr;
-        std::string m_key;
+        std::string_view m_key;
         std::uint64_t m_id = 0;
         std::uint64_t m_kpos = 0;
         std::uint64_t m_npos = 0;
@@ -231,7 +231,7 @@ class trie {
 
       private:
         const trie_type* m_obj = nullptr;
-        std::string m_key;
+        std::string_view m_key;
         std::uint64_t m_id = 0;
         std::string m_decoded;
         std::vector<cursor_type> m_stack;
@@ -317,8 +317,7 @@ class trie {
         : m_num_keys(b.m_keys.size()), m_table(std::move(b.m_table)), m_terms(b.m_terms, true, true),
           m_bcvec(b.m_units, std::move(b.m_leaves)), m_tvec(std::move(b.m_suffixes)) {}
 
-    template <class String>
-    static constexpr String get_suffix(const String& s, std::uint64_t i) {
+    static constexpr std::string_view get_suffix(std::string_view s, std::uint64_t i) {
         assert(i <= s.size());
         return s.substr(i, s.size() - i);
     }
@@ -376,7 +375,7 @@ class trie {
         itr->is_end = true;
 
         const std::uint64_t tpos = m_bcvec.link(itr->m_npos);
-        if (!m_tvec.match(get_suffix(itr->m_key, itr->m_kpos), tpos)) {
+        if (!m_tvec.prefix_match(get_suffix(itr->m_key, itr->m_kpos), tpos)) {
             itr->m_id = num_keys();
             return false;
         }
