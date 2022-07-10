@@ -167,7 +167,7 @@ TEST_CASE("Test " TRIE_NAME " (tiny)") {
     test_basic_operations(trie, keys, others);
 
     {
-        auto itr = trie.make_prefix_iterator("MacBook_Pro");
+        auto itr = trie.make_prefix_iterator("MacBook_Pro_13inch");
         std::vector<std::string> expected = {"Mac", "MacBook", "MacBook_Pro"};
         for (const auto& exp : expected) {
             REQUIRE(itr.next());
