@@ -168,17 +168,25 @@ class tail_vector {
 
     // Returns true if TAIL[tpos..epos] is a prefix of key, where epos is the end position of the tail.
     inline bool prefix_match(std::string_view key, std::uint64_t tpos) const {
-        assert(key.size() != 0);
+        if (tpos == 0) {
+            // suffix is empty, returns true always.
+            return true;
+        }
+        if (key.size() == 0) {
+            // When key is empty, returns true iff suffix is empty.
+            return false;
+        }
+
         std::uint64_t kpos = 0;
         if (bin_mode()) {
             do {
-                if (m_terms[tpos]) {
-                    return true;
-                }
                 if (key[kpos] != m_chars[tpos]) {
                     return false;
                 }
                 kpos += 1;
+                if (m_terms[tpos]) {
+                    return true;
+                }
                 tpos += 1;
             } while (kpos < key.size());
             return true;
