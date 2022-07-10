@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -166,42 +167,42 @@ class tail_vector {
         }
     }
 
-    // Returns true if TAIL[tpos..epos] is a prefix of key, where epos is the end position of the tail.
-    inline bool prefix_match(std::string_view key, std::uint64_t tpos) const {
+    // Returns epos-tpos+1 if TAIL[tpos..epos] is a prefix of key.
+    inline std::optional<std::uint64_t> prefix_match(std::string_view key, std::uint64_t tpos) const {
         if (tpos == 0) {
-            // suffix is empty, returns true always.
-            return true;
+            // suffix is empty, always matched.
+            return 0;
         }
         if (key.size() == 0) {
-            // When key is empty, returns true iff suffix is empty.
-            return false;
+            // When key is empty, match fails since the suffix is not empty here.
+            return std::nullopt;
         }
 
         std::uint64_t kpos = 0;
         if (bin_mode()) {
             do {
                 if (key[kpos] != m_chars[tpos]) {
-                    return false;
+                    return std::nullopt;
                 }
                 kpos += 1;
                 if (m_terms[tpos]) {
-                    return true;
+                    return kpos;
                 }
                 tpos += 1;
             } while (kpos < key.size());
-            return true;
+            return kpos;
         } else {
             do {
                 if (!m_chars[tpos]) {
-                    return true;
+                    return kpos;
                 }
                 if (key[kpos] != m_chars[tpos]) {
-                    return false;
+                    return std::nullopt;
                 }
                 kpos += 1;
                 tpos += 1;
             } while (kpos < key.size());
-            return true;
+            return kpos;
         }
     }
 

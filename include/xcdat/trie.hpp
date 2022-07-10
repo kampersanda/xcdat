@@ -375,12 +375,12 @@ class trie {
         itr->is_end = true;
 
         const std::uint64_t tpos = m_bcvec.link(itr->m_npos);
-        if (!m_tvec.prefix_match(get_suffix(itr->m_key, itr->m_kpos), tpos)) {
+        const auto matched = m_tvec.prefix_match(get_suffix(itr->m_key, itr->m_kpos), tpos);
+        if (!matched.has_value()) {
             itr->m_id = num_keys();
             return false;
         }
-
-        itr->m_kpos = itr->m_key.size();
+        itr->m_kpos += matched.value();
         itr->m_id = npos_to_id(itr->m_npos);
         return true;
     }
