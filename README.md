@@ -49,7 +49,7 @@ Or, since this library consists only of header files, you can easily install it 
 
 You need to install a modern C++17 ready compiler such as `g++ >= 7.0` or `clang >= 4.0`. For the build system, you need to install `CMake >= 3.0` to compile the library.
 
-The library considers a 64-bit operating system. The code has been tested only on Mac OS X and Linux. That is, this library considers only UNIX-compatible OS.
+The library requires that `std::uint64_t` exists. (This is true for nearly any target, even 32-bit ones.) The code has been tested only on Mac OS X and Linux. That is, this library considers only UNIX-compatible OS.
 
 ### Python binding
 
