@@ -40,7 +40,7 @@ class code_table {
             for (std::uint8_t ch : key) {
                 counter[ch].freq += 1;
             }
-            m_max_length = std::max<std::uint64_t>(m_max_length, key.length());
+            m_max_length = std::max<std::uint64_t>(m_max_length, key.size());
         }
 
         {
